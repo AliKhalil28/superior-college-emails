@@ -15,7 +15,7 @@ interface EmailListProps {
 }
 
 export function EmailList({ emails, selectedIds, onToggleSelect, onSelect }: EmailListProps) {
-  const { toggleStar, moveToFolder } = useMail();
+  const { toggleStar, moveToFolder, markUnread } = useMail();
 
   if (emails.length === 0) {
     return (
@@ -130,14 +130,18 @@ export function EmailList({ emails, selectedIds, onToggleSelect, onSelect }: Ema
                 <button
                   className="rounded-full p-1.5 text-[#5f6368] hover:bg-[#e8eaed]"
                   aria-label="Mark as unread"
-                  onClick={(e) => e.stopPropagation()}
+                  onClick={(e) =>
+                    rowAction(e, () => markUnread(email.id), "Marked as unread")
+                  }
                 >
                   <MailOpen className="h-4 w-4" />
                 </button>
                 <button
                   className="rounded-full p-1.5 text-[#5f6368] hover:bg-[#e8eaed]"
                   aria-label="Snooze"
-                  onClick={(e) => e.stopPropagation()}
+                  onClick={(e) =>
+                    rowAction(e, () => {}, "Snoozed until tomorrow, 8:00 AM")
+                  }
                 >
                   <Clock className="h-4 w-4" />
                 </button>

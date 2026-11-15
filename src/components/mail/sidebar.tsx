@@ -28,20 +28,42 @@ const folderIcons: Record<FolderId, typeof Inbox> = {
   trash: Trash2,
 };
 
-export function Sidebar() {
+export function Sidebar({
+  onNavigate,
+  className,
+}: {
+  onNavigate?: () => void;
+  className?: string;
+}) {
   const router = useRouter();
-  const { folder, setFolder } = useMail();
+  const { folder, setFolder, labelFilter, setLabelFilter } = useMail();
 
   const goFolder = (next: FolderId) => {
     setFolder(next);
+    setLabelFilter(null);
     router.push("/mail");
+    onNavigate?.();
+  };
+
+  const goLabel = (label: string) => {
+    setLabelFilter(labelFilter === label ? null : label);
+    router.push("/mail");
+    onNavigate?.();
   };
 
   return (
-    <aside className="hidden w-64 shrink-0 flex-col bg-[#f6f8fc] py-2 pl-2 pr-4 md:flex">
+    <aside
+      className={cn(
+        "hidden w-64 shrink-0 flex-col bg-[#f6f8fc] py-2 pl-2 pr-4 md:flex",
+        className
+      )}
+    >
       <div className="mb-4 pl-2 pt-1">
         <button
-          onClick={() => router.push("/mail/compose")}
+          onClick={() => {
+            router.push("/mail/compose");
+            onNavigate?.();
+          }}
           className="flex h-14 items-center gap-3 rounded-2xl bg-[#c2e7ff] px-6 text-sm font-medium text-[#001d35] shadow-sm transition hover:shadow-md"
         >
           <SquarePen className="h-5 w-5" />
@@ -93,15 +115,25 @@ export function Sidebar() {
         </button>
       </div>
       <div className="space-y-px">
-        {labels.map((label) => (
-          <button
-            key={label.name}
-            className="flex w-full items-center gap-4 rounded-r-full py-1.5 pl-4 pr-3 text-sm text-[#202124] transition hover:bg-[#e8eaed]"
-          >
-            <Tag className={cn("h-[18px] w-[18px]", label.color.replace("bg-", "text-"))} />
-            {label.name}
-          </button>
-        ))}
+        {labels.map((label) => {
+          const isActive = labelFilter === label.name;
+          return (
+            <button
+              key={label.name}
+              onClick={() => goLabel(label.name)}
+              className={cn(
+                "flex w-full items-center gap-4 rounded-r-full py-1.5 pl-4 pr-3 text-sm transition",
+                isActive
+                  ? "bg-[#d3e3fd] font-medium text-[#041e49]"
+                  : "text-[#202124] hover:bg-[#e8eaed]"
+              )}
+            >
+              <Tag className={cn("h-[18px] w-[18px]", label.color.replace("bg-", "text-"))} />
+              {label.name}
+              {isActive && <span className="ml-auto text-xs">✓</span>}
+            </button>
+          );
+        })}
       </div>
 
       <div className="mt-auto px-4 pb-2 pt-4">

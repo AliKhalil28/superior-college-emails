@@ -2,11 +2,19 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
-import { Eye, EyeOff, Inbox, Lock, Mail, Send, ShieldCheck, Users } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Eye, EyeOff, Inbox, Lock, Mail, MailQuestion, Send, ShieldCheck, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -29,7 +37,9 @@ const features = [
 ];
 
 export default function LoginPage() {
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
+  const [forgotOpen, setForgotOpen] = useState(false);
 
   return (
     <main className="grid min-h-screen lg:grid-cols-2">
@@ -105,7 +115,7 @@ export default function LoginPage() {
                 className="space-y-4"
                 onSubmit={(e) => {
                   e.preventDefault();
-                  window.location.href = "/mail";
+                  router.push("/mail");
                 }}
               >
                 <div className="space-y-2">
@@ -124,9 +134,13 @@ export default function LoginPage() {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="password">Password</Label>
-                    <Link href="/login" className="text-xs font-medium text-primary hover:underline">
+                    <button
+                      type="button"
+                      onClick={() => setForgotOpen(true)}
+                      className="text-xs font-medium text-primary hover:underline"
+                    >
                       Forgot password?
-                    </Link>
+                    </button>
                   </div>
                   <div className="relative">
                     <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -166,11 +180,46 @@ export default function LoginPage() {
           </Card>
 
           <p className="mt-6 text-center text-xs text-muted-foreground">
-            Facing a problem with your mailbox? Contact the IT Department ·
-            it@superiorcollegemc.com
+            Facing a problem with your mailbox? Contact the IT Department ·{" "}
+            <a
+              href="mailto:it@superiorcollegemc.com"
+              className="font-medium text-primary hover:underline"
+            >
+              it@superiorcollegemc.com
+            </a>
           </p>
         </div>
       </section>
+
+      <Dialog open={forgotOpen} onOpenChange={setForgotOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <MailQuestion className="h-5 w-5 text-primary" />
+              Reset your password
+            </DialogTitle>
+            <DialogDescription>
+              For security, mailbox passwords are reset by the IT Department — staff
+              cannot reset them directly.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 text-sm leading-relaxed text-muted-foreground">
+            <p>1. Email the IT Department from any account you can access, or visit the IT Office.</p>
+            <p>2. Share your full college email address and staff ID for verification.</p>
+            <p>3. You will receive a new temporary password, which you can change after signing in.</p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setForgotOpen(false)}>
+              Close
+            </Button>
+            <Button>
+              <a href="mailto:it@superiorcollegemc.com?subject=Password%20reset%20request%20—%20Superior%20Mail">
+                Email IT Department
+              </a>
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }

@@ -1,17 +1,19 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { SquarePen } from "lucide-react";
+import { SquarePen, X } from "lucide-react";
 import { RightRail } from "@/components/mail/right-rail";
 import { Sidebar } from "@/components/mail/sidebar";
 import { Topbar } from "@/components/mail/topbar";
 
 export function MailShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   return (
     <div className="flex h-screen flex-col bg-[#f6f8fc]">
-      <Topbar />
+      <Topbar onMenuClick={() => setDrawerOpen(true)} />
       <div className="flex min-h-0 flex-1">
         <Sidebar />
         <main className="mb-2 mr-2 flex min-w-0 flex-1 flex-col overflow-hidden rounded-2xl bg-white shadow-sm md:mr-0">
@@ -19,6 +21,32 @@ export function MailShell({ children }: { children: React.ReactNode }) {
         </main>
         <RightRail />
       </div>
+
+      {/* Mobile drawer with folders/labels */}
+      {drawerOpen && (
+        <div className="fixed inset-0 z-50 md:hidden">
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={() => setDrawerOpen(false)}
+          />
+          <div className="absolute inset-y-0 left-0 flex w-72 flex-col bg-[#f6f8fc] shadow-xl">
+            <div className="flex items-center justify-between px-4 py-3">
+              <p className="text-lg font-medium text-[#0b3d2a]">Superior Mail</p>
+              <button
+                className="flex h-9 w-9 items-center justify-center rounded-full text-[#5f6368] hover:bg-[#e8eaed]"
+                aria-label="Close menu"
+                onClick={() => setDrawerOpen(false)}
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <Sidebar
+              className="flex w-full flex-1 md:flex"
+              onNavigate={() => setDrawerOpen(false)}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Mobile compose button */}
       <button

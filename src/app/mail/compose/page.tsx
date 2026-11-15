@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -17,6 +17,7 @@ import {
   Trash2,
   Underline,
   Undo2,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
@@ -43,17 +44,64 @@ export default function ComposePage() {
   const [body, setBody] = useState("");
   const [showCc, setShowCc] = useState(false);
   const [showBcc, setShowBcc] = useState(false);
+  const [attachments, setAttachments] = useState<{ name: string; size: string }[]>([]);
+  const [confidential, setConfidential] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const bodyRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
+    const savedFrom = window.localStorage.getItem("sm-default-from");
+    if (savedFrom) setFrom(savedFrom);
+    const savedSig = window.localStorage.getItem("sm-signature");
     if (prefill) {
       setTo(prefill.to ?? "");
       setSubject(prefill.subject ?? "");
-      setBody(prefill.body ?? "");
+      setBody((prefill.body ?? "") + (savedSig ?? ""));
       setPrefill(null);
+    } else if (savedSig) {
+      setBody(savedSig);
     }
-    // Only consume the prefill once, on mount.
+    // Only consume the prefill/settings once, on mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const wrapSelection = (before: string, after: string) => {
+    const ta = bodyRef.current;
+    if (!ta) return;
+    const start = ta.selectionStart ?? body.length;
+    const end = ta.selectionEnd ?? body.length;
+    const selected = body.slice(start, end) || "text";
+    const next = body.slice(0, start) + before + selected + after + body.slice(end);
+    setBody(next);
+    requestAnimationFrame(() => {
+      ta.focus();
+      ta.setSelectionRange(start + before.length, start + before.length + selected.length);
+    });
+  };
+
+  const insertAtCursor = (text: string) => {
+    const ta = bodyRef.current;
+    if (!ta) {
+      setBody((b) => b + text);
+      return;
+    }
+    const start = ta.selectionStart ?? body.length;
+    setBody(body.slice(0, start) + text + body.slice(start));
+    requestAnimationFrame(() => ta.focus());
+  };
+
+  const handleFiles = (files: FileList | null) => {
+    if (!files) return;
+    const added = Array.from(files).map((f) => ({
+      name: f.name,
+      size:
+        f.size > 1024 * 1024
+          ? `${(f.size / (1024 * 1024)).toFixed(1)} MB`
+          : `${Math.max(1, Math.round(f.size / 1024))} KB`,
+    }));
+    setAttachments((prev) => [...prev, ...added]);
+    toast.success(`${added.length} file${added.length > 1 ? "s" : ""} attached`);
+  };
 
   const buildEmail = (folder: "sent" | "drafts"): Email => ({
     id: `local-${Date.now()}`,
@@ -68,6 +116,8 @@ export default function ComposePage() {
     subject: subject || "(no subject)",
     preview: body.trim().slice(0, 110) || "…",
     body: body ? [body] : [""],
+    hasAttachment: attachments.length > 0,
+    attachments: attachments.length > 0 ? attachments : undefined,
     date: "Today",
     time: new Date().toLocaleTimeString("en-US", {
       hour: "numeric",
@@ -189,39 +239,97 @@ export default function ComposePage() {
 
         {/* Formatting toolbar (design) */}
         <div className="flex items-center gap-0.5 border-b border-[#e8eaed] bg-[#f8f9fa] px-3 py-1">
-          <button className={ghostIcon} aria-label="Undo">
+          <button
+            className={ghostIcon}
+            aria-label="Undo"
+            onClick={() => {
+              bodyRef.current?.focus();
+              document.execCommand("undo");
+            }}
+          >
             <Undo2 className="h-4 w-4" />
           </button>
-          <button className={ghostIcon} aria-label="Redo">
+          <button
+            className={ghostIcon}
+            aria-label="Redo"
+            onClick={() => {
+              bodyRef.current?.focus();
+              document.execCommand("redo");
+            }}
+          >
             <Redo2 className="h-4 w-4" />
           </button>
           <span className="mx-1 h-5 w-px bg-[#dadce0]" />
-          <button className={ghostIcon} aria-label="Bold">
+          <button className={ghostIcon} aria-label="Bold" onClick={() => wrapSelection("**", "**")}>
             <Bold className="h-4 w-4" />
           </button>
-          <button className={ghostIcon} aria-label="Italic">
+          <button className={ghostIcon} aria-label="Italic" onClick={() => wrapSelection("*", "*")}>
             <Italic className="h-4 w-4" />
           </button>
-          <button className={ghostIcon} aria-label="Underline">
+          <button className={ghostIcon} aria-label="Underline" onClick={() => wrapSelection("__", "__")}>
             <Underline className="h-4 w-4" />
           </button>
           <span className="mx-1 h-5 w-px bg-[#dadce0]" />
-          <button className={ghostIcon} aria-label="Insert link">
+          <button
+            className={ghostIcon}
+            aria-label="Insert link"
+            onClick={() => wrapSelection("[", "](https://)")}
+          >
             <Link2 className="h-4 w-4" />
           </button>
-          <button className={ghostIcon} aria-label="Insert emoji">
+          <button className={ghostIcon} aria-label="Insert emoji" onClick={() => insertAtCursor(" 😊")}>
             <Smile className="h-4 w-4" />
           </button>
-          <button className={ghostIcon} aria-label="Insert photo">
+          <button
+            className={ghostIcon}
+            aria-label="Insert photo"
+            onClick={() => fileInputRef.current?.click()}
+          >
             <ImagePlus className="h-4 w-4" />
           </button>
         </div>
 
         <Textarea
+          ref={bodyRef}
           value={body}
           onChange={(e) => setBody(e.target.value)}
           placeholder="Write your message…"
           className="min-h-0 flex-1 resize-none rounded-none border-0 p-4 text-sm leading-relaxed shadow-none focus-visible:ring-0"
+        />
+
+        {attachments.length > 0 && (
+          <div className="flex flex-wrap gap-2 border-t border-[#e8eaed] px-4 py-2.5">
+            {attachments.map((att, i) => (
+              <span
+                key={`${att.name}-${i}`}
+                className="flex items-center gap-2 rounded-md bg-[#f2f6fc] py-1 pl-2.5 pr-1.5 text-xs font-medium text-[#202124]"
+              >
+                <Paperclip className="h-3.5 w-3.5 text-[#5f6368]" />
+                {att.name}
+                <span className="font-normal text-[#5f6368]">({att.size})</span>
+                <button
+                  aria-label={`Remove ${att.name}`}
+                  onClick={() =>
+                    setAttachments((prev) => prev.filter((_, idx) => idx !== i))
+                  }
+                  className="flex h-5 w-5 items-center justify-center rounded-full hover:bg-[#e8eaed]"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          className="hidden"
+          onChange={(e) => {
+            handleFiles(e.target.files);
+            e.target.value = "";
+          }}
         />
 
         <div className="flex items-center gap-1 border-t border-[#e8eaed] px-3 py-2.5">
@@ -241,16 +349,42 @@ export default function ComposePage() {
             </button>
           </div>
 
-          <button className={ghostIcon} aria-label="Attach files">
+          <button
+            className={ghostIcon}
+            aria-label="Attach files"
+            onClick={() => fileInputRef.current?.click()}
+          >
             <Paperclip className="h-5 w-5" />
           </button>
-          <button className={ghostIcon} aria-label="Insert link">
+          <button
+            className={ghostIcon}
+            aria-label="Insert link"
+            onClick={() => wrapSelection("[", "](https://)")}
+          >
             <Link2 className="h-5 w-5" />
           </button>
-          <button className={ghostIcon} aria-label="Insert emoji">
+          <button
+            className={ghostIcon}
+            aria-label="Insert emoji"
+            onClick={() => insertAtCursor(" 😊")}
+          >
             <Smile className="h-5 w-5" />
           </button>
-          <button className={ghostIcon} aria-label="Confidential mode">
+          <button
+            className={`${ghostIcon} ${confidential ? "bg-[#d3e3fd] text-[#0b57d0]" : ""}`}
+            aria-label="Confidential mode"
+            onClick={() => {
+              setConfidential((v) => !v);
+              toast.info(
+                confidential ? "Confidential mode off" : "Confidential mode on",
+                {
+                  description: confidential
+                    ? undefined
+                    : "Recipients will not be able to forward, copy or download this message (design preview).",
+                }
+              );
+            }}
+          >
             <Lock className="h-5 w-5" />
           </button>
 

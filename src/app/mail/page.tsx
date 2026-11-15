@@ -7,11 +7,22 @@ import {
   ChevronRight,
   EllipsisVertical,
   Inbox,
+  MailCheck,
   RefreshCw,
+  Square,
+  SquareCheck,
   Tag,
   UsersRound,
+  X,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { EmailList } from "@/components/mail/email-list";
 import { EmailView } from "@/components/mail/email-view";
@@ -28,17 +39,20 @@ const tabs: { id: Category; label: string; icon: typeof Inbox }[] = [
 ];
 
 export default function MailPage() {
-  const { emails, folder, query, markRead } = useMail();
+  const { emails, folder, query, markRead, markAllRead, labelFilter, setLabelFilter } =
+    useMail();
   const [category, setCategory] = useState<Category>("primary");
   const [openedId, setOpenedId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [refreshing, setRefreshing] = useState(false);
 
   const folderEmails = useMemo(() => {
-    let list =
-      folder === "starred"
+    let list = labelFilter
+      ? emails.filter((e) => e.labels?.includes(labelFilter) && e.folder !== "trash")
+      : folder === "starred"
         ? emails.filter((e) => e.starred)
         : emails.filter((e) => e.folder === folder);
-    if (folder === "inbox") {
+    if (!labelFilter && folder === "inbox") {
       list = list.filter((e) => (e.category ?? "primary") === category);
     }
     const q = query.trim().toLowerCase();
@@ -52,7 +66,7 @@ export default function MailPage() {
       );
     }
     return list;
-  }, [emails, folder, category, query]);
+  }, [emails, folder, category, query, labelFilter]);
 
   const openedEmail = emails.find((e) => e.id === openedId) ?? null;
   const folderLabel = folders.find((f) => f.id === folder)?.label ?? "Inbox";
@@ -98,14 +112,54 @@ export default function MailPage() {
           />
           <ChevronDown className="ml-0.5 h-4 w-4 text-[#5f6368]" />
         </span>
-        <button className={iconBtn} aria-label="Refresh">
-          <RefreshCw className="h-[18px] w-[18px]" />
+        <button
+          className={iconBtn}
+          aria-label="Refresh"
+          onClick={() => {
+            setRefreshing(true);
+            setTimeout(() => {
+              setRefreshing(false);
+              toast.success("Inbox is up to date");
+            }, 600);
+          }}
+        >
+          <RefreshCw className={cn("h-[18px] w-[18px]", refreshing && "animate-spin")} />
         </button>
-        <button className={iconBtn} aria-label="More">
-          <EllipsisVertical className="h-[18px] w-[18px]" />
-        </button>
+        <DropdownMenu>
+          <DropdownMenuTrigger className={iconBtn} aria-label="More actions">
+            <EllipsisVertical className="h-[18px] w-[18px]" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-56 rounded-xl">
+            <DropdownMenuItem
+              onClick={() => {
+                markAllRead(folderEmails.map((e) => e.id));
+                toast.success("All messages marked as read");
+              }}
+            >
+              <MailCheck className="mr-2 h-4 w-4" /> Mark all as read
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleSelectAll(true)}>
+              <SquareCheck className="mr-2 h-4 w-4" /> Select all messages
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setSelectedIds(new Set())}>
+              <Square className="mr-2 h-4 w-4" /> Clear selection
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
         {selectedIds.size > 0 && (
           <span className="ml-2 text-sm text-[#0b57d0]">{selectedIds.size} selected</span>
+        )}
+        {labelFilter && (
+          <span className="ml-2 flex items-center gap-1.5 rounded-full bg-[#d3e3fd] py-1 pl-3 pr-1.5 text-sm font-medium text-[#041e49]">
+            Label: {labelFilter}
+            <button
+              onClick={() => setLabelFilter(null)}
+              className="flex h-5 w-5 items-center justify-center rounded-full hover:bg-white/60"
+              aria-label="Clear label filter"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </span>
         )}
         <div className="ml-auto flex items-center gap-1 text-xs text-[#5f6368]">
           <span className="mr-1">
@@ -122,8 +176,17 @@ export default function MailPage() {
         </div>
       </div>
 
-      {/* Category tabs (Inbox only) */}
-      {folder === "inbox" ? (
+      {/* Category tabs (Inbox only, not in label view) */}
+      {labelFilter ? (
+        <div className="border-b border-[#e8eaed] px-4 py-2.5">
+          <h2 className="text-sm font-medium text-[#202124]">
+            Label: {labelFilter}
+            <span className="ml-2 font-normal text-[#5f6368]">
+              {folderEmails.length} conversation{folderEmails.length === 1 ? "" : "s"}
+            </span>
+          </h2>
+        </div>
+      ) : folder === "inbox" ? (
         <div className="flex border-b border-[#e8eaed] px-2 sm:px-4">
           {tabs.map((tab) => {
             const isActive = category === tab.id;

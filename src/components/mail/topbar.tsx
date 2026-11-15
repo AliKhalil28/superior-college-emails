@@ -3,8 +3,12 @@
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
+  BookOpen,
   CircleHelp,
+  FlaskConical,
+  Globe,
   Grip,
+  Keyboard,
   LogOut,
   Menu,
   Search,
@@ -12,6 +16,7 @@ import {
   SlidersHorizontal,
   UserRound,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -25,9 +30,18 @@ import { Input } from "@/components/ui/input";
 import { currentUser } from "@/lib/mock-data";
 import { useMail } from "@/components/mail/mail-context";
 
-export function Topbar() {
+const collegeApps = [
+  { name: "College Website", url: "https://www.superiorcollegemc.com", icon: Globe },
+  { name: "Superior Lab Tracker", url: "https://labs.superiorcollegemc.com", icon: FlaskConical },
+  { name: "Digital E-Library", url: "https://elibrary.superiorcollegemc.com", icon: BookOpen },
+];
+
+export function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
   const router = useRouter();
   const { query, setQuery } = useMail();
+
+  const iconBtn =
+    "hidden h-10 w-10 items-center justify-center rounded-full text-[#5f6368] transition hover:bg-[#e8eaed] sm:flex";
 
   return (
     <header className="flex h-16 items-center gap-2 bg-[#f6f8fc] px-4 sm:gap-4">
@@ -35,6 +49,7 @@ export function Topbar() {
         <button
           className="flex h-10 w-10 items-center justify-center rounded-full text-[#5f6368] transition hover:bg-[#e8eaed]"
           aria-label="Main menu"
+          onClick={onMenuClick}
         >
           <Menu className="h-5 w-5" />
         </button>
@@ -60,24 +75,81 @@ export function Topbar() {
       </div>
 
       <div className="ml-auto flex items-center gap-0.5 sm:gap-1">
+        <DropdownMenu>
+          <DropdownMenuTrigger className={iconBtn} aria-label="Help">
+            <CircleHelp className="h-5 w-5" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-64 rounded-2xl p-1.5">
+            <DropdownMenuLabel>Help</DropdownMenuLabel>
+            <DropdownMenuItem
+              onClick={() =>
+                toast.info("IT Department", {
+                  description:
+                    "For mailbox help, contact it@superiorcollegemc.com or visit the IT Office.",
+                })
+              }
+            >
+              <CircleHelp className="mr-2 h-4 w-4" /> Help & support
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() =>
+                toast.info("Keyboard shortcuts", {
+                  description: "Shortcuts arrive with the functionality phase.",
+                })
+              }
+            >
+              <Keyboard className="mr-2 h-4 w-4" /> Keyboard shortcuts
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={() =>
+                toast.info("Superior Mail", {
+                  description:
+                    "Official email portal of Superior College Mian Channu — UI design phase.",
+                })
+              }
+            >
+              About Superior Mail
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
         <button
-          className="hidden h-10 w-10 items-center justify-center rounded-full text-[#5f6368] transition hover:bg-[#e8eaed] sm:flex"
-          aria-label="Help"
-        >
-          <CircleHelp className="h-5 w-5" />
-        </button>
-        <button
-          className="hidden h-10 w-10 items-center justify-center rounded-full text-[#5f6368] transition hover:bg-[#e8eaed] sm:flex"
+          className={iconBtn}
           aria-label="Settings"
+          onClick={() => router.push("/mail/settings")}
         >
           <Settings className="h-5 w-5" />
         </button>
-        <button
-          className="hidden h-10 w-10 items-center justify-center rounded-full text-[#5f6368] transition hover:bg-[#e8eaed] md:flex"
-          aria-label="Apps"
-        >
-          <Grip className="h-5 w-5" />
-        </button>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            className="hidden h-10 w-10 items-center justify-center rounded-full text-[#5f6368] transition hover:bg-[#e8eaed] md:flex"
+            aria-label="College apps"
+          >
+            <Grip className="h-5 w-5" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-72 rounded-2xl p-2">
+            <DropdownMenuLabel>Superior College apps</DropdownMenuLabel>
+            <div className="grid grid-cols-3 gap-1 p-1">
+              {collegeApps.map((app) => (
+                <a
+                  key={app.name}
+                  href={app.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex flex-col items-center gap-2 rounded-xl px-2 py-3 text-center transition hover:bg-[#f2f6fc]"
+                >
+                  <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[#0b3d2a]/10">
+                    <app.icon className="h-5 w-5 text-[#0b3d2a]" />
+                  </span>
+                  <span className="text-xs leading-tight text-[#202124]">{app.name}</span>
+                </a>
+              ))}
+            </div>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
         <DropdownMenu>
           <DropdownMenuTrigger className="ml-1 rounded-full">
             <Avatar className="h-9 w-9">
@@ -95,10 +167,10 @@ export function Topbar() {
               </p>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={() => router.push("/mail/settings")}>
               <UserRound className="mr-2 h-4 w-4" /> Manage your account
             </DropdownMenuItem>
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={() => router.push("/mail/settings")}>
               <Settings className="mr-2 h-4 w-4" /> Mailbox settings
             </DropdownMenuItem>
             <DropdownMenuSeparator />

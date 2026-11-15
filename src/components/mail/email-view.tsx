@@ -32,7 +32,10 @@ interface EmailViewProps {
 
 export function EmailView({ email, onBack }: EmailViewProps) {
   const router = useRouter();
-  const { setPrefill, moveToFolder, toggleStar } = useMail();
+  const { setPrefill, moveToFolder, toggleStar, markUnread, emails } = useMail();
+
+  const siblings = emails.filter((e) => e.folder === email.folder);
+  const position = Math.max(0, siblings.findIndex((e) => e.id === email.id)) + 1;
 
   const goCompose = (mode: "reply" | "forward") => {
     if (mode === "reply") {
@@ -71,7 +74,15 @@ export function EmailView({ email, onBack }: EmailViewProps) {
         >
           <Archive className="h-[18px] w-[18px]" />
         </button>
-        <button className={toolbarBtn} aria-label="Report spam">
+        <button
+          className={toolbarBtn}
+          aria-label="Report spam"
+          onClick={() => {
+            moveToFolder(email.id, "spam");
+            toast.success("Conversation reported as spam");
+            onBack();
+          }}
+        >
           <OctagonAlert className="h-[18px] w-[18px]" />
         </button>
         <button
@@ -86,14 +97,28 @@ export function EmailView({ email, onBack }: EmailViewProps) {
           <Trash2 className="h-[18px] w-[18px]" />
         </button>
         <span className="mx-1 h-5 w-px bg-[#e8eaed]" />
-        <button className={toolbarBtn} aria-label="Mark as unread">
+        <button
+          className={toolbarBtn}
+          aria-label="Mark as unread"
+          onClick={() => {
+            markUnread(email.id);
+            toast.success("Marked as unread");
+            onBack();
+          }}
+        >
           <Mail className="h-[18px] w-[18px]" />
         </button>
-        <button className={toolbarBtn} aria-label="Snooze">
+        <button
+          className={toolbarBtn}
+          aria-label="Snooze"
+          onClick={() => toast.success("Snoozed until tomorrow, 8:00 AM")}
+        >
           <Clock className="h-[18px] w-[18px]" />
         </button>
         <div className="ml-auto flex items-center gap-1 text-xs text-[#5f6368]">
-          <span className="mr-1 hidden sm:block">1 of 24</span>
+          <span className="mr-1 hidden sm:block">
+            {position} of {siblings.length}
+          </span>
           <button className={toolbarBtn} aria-label="Newer">
             <ChevronLeft className="h-5 w-5" />
           </button>
@@ -210,7 +235,10 @@ export function EmailView({ email, onBack }: EmailViewProps) {
                 >
                   <Forward className="h-4 w-4" /> Forward
                 </button>
-                <button className="ml-auto hidden items-center gap-2 rounded-full px-3 py-2 text-sm text-[#5f6368] transition hover:bg-[#e8eaed] sm:flex">
+                <button
+                  onClick={() => window.print()}
+                  className="ml-auto hidden items-center gap-2 rounded-full px-3 py-2 text-sm text-[#5f6368] transition hover:bg-[#e8eaed] sm:flex"
+                >
                   <Printer className="h-4 w-4" /> Print
                 </button>
               </div>

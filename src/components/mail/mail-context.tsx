@@ -17,8 +17,12 @@ interface MailContextValue {
   setQuery: (query: string) => void;
   prefill: ComposePrefill | null;
   setPrefill: (prefill: ComposePrefill | null) => void;
+  labelFilter: string | null;
+  setLabelFilter: (label: string | null) => void;
   toggleStar: (id: string) => void;
   markRead: (id: string) => void;
+  markUnread: (id: string) => void;
+  markAllRead: (ids: string[]) => void;
   moveToFolder: (id: string, folder: FolderId) => void;
   addOutgoing: (email: Email) => void;
 }
@@ -30,6 +34,7 @@ export function MailProvider({ children }: { children: React.ReactNode }) {
   const [folder, setFolder] = useState<FolderId>("inbox");
   const [query, setQuery] = useState("");
   const [prefill, setPrefill] = useState<ComposePrefill | null>(null);
+  const [labelFilter, setLabelFilter] = useState<string | null>(null);
 
   const toggleStar = useCallback((id: string) => {
     setEmails((prev) =>
@@ -40,6 +45,18 @@ export function MailProvider({ children }: { children: React.ReactNode }) {
   const markRead = useCallback((id: string) => {
     setEmails((prev) =>
       prev.map((e) => (e.id === id ? { ...e, unread: false } : e))
+    );
+  }, []);
+
+  const markUnread = useCallback((id: string) => {
+    setEmails((prev) =>
+      prev.map((e) => (e.id === id ? { ...e, unread: true } : e))
+    );
+  }, []);
+
+  const markAllRead = useCallback((ids: string[]) => {
+    setEmails((prev) =>
+      prev.map((e) => (ids.includes(e.id) ? { ...e, unread: false } : e))
     );
   }, []);
 
@@ -62,12 +79,28 @@ export function MailProvider({ children }: { children: React.ReactNode }) {
       setQuery,
       prefill,
       setPrefill,
+      labelFilter,
+      setLabelFilter,
       toggleStar,
       markRead,
+      markUnread,
+      markAllRead,
       moveToFolder,
       addOutgoing,
     }),
-    [emails, folder, query, prefill, toggleStar, markRead, moveToFolder, addOutgoing]
+    [
+      emails,
+      folder,
+      query,
+      prefill,
+      labelFilter,
+      toggleStar,
+      markRead,
+      markUnread,
+      markAllRead,
+      moveToFolder,
+      addOutgoing,
+    ]
   );
 
   return <MailContext.Provider value={value}>{children}</MailContext.Provider>;
