@@ -20,7 +20,6 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import type { Email } from "@/lib/mock-data";
 import { useMail } from "@/components/mail/mail-context";
 import { cn } from "@/lib/utils";
@@ -128,7 +127,7 @@ export function EmailView({ email, onBack }: EmailViewProps) {
         </div>
       </div>
 
-      <ScrollArea className="flex-1">
+      <div className="min-h-0 flex-1 overflow-y-auto">
         <div className="px-4 pb-8 pt-1 sm:px-6">
           <div className="flex flex-wrap items-center gap-3 pl-0 sm:pl-12">
             <h1 className="text-[22px] font-normal leading-snug text-[#202124]">
@@ -245,7 +244,7 @@ export function EmailView({ email, onBack }: EmailViewProps) {
             </div>
           </div>
         </div>
-      </ScrollArea>
+      </div>
     </div>
   );
 }

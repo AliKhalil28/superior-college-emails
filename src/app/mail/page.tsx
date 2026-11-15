@@ -23,7 +23,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { EmailList } from "@/components/mail/email-list";
 import { EmailView } from "@/components/mail/email-view";
 import { useMail } from "@/components/mail/mail-context";
@@ -250,14 +249,14 @@ export default function MailPage() {
         </div>
       )}
 
-      <ScrollArea className="flex-1">
+      <div className="min-h-0 flex-1 overflow-y-auto">
         <EmailList
           emails={folderEmails}
           selectedIds={selectedIds}
           onToggleSelect={handleToggleSelect}
           onSelect={handleOpen}
         />
-      </ScrollArea>
+      </div>
 
       <div className="flex items-center justify-between border-t border-[#e8eaed] px-4 py-1.5 text-xs text-[#5f6368]">
         <span>0.18 GB of 10 GB used</span>
