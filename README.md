@@ -12,15 +12,23 @@ receive mail from the browser — no personal Gmail/WhatsApp for official work.
 realistic sample data:
 
 - `/login` — branded sign-in page (split layout, college crest, green/gold theme)
-- `/mail` — three-pane mail app:
-  - Sidebar: Compose, folders (Inbox, Starred, Sent, Drafts, Archive, Spam,
-    Trash), labels, storage meter, plan summary
-  - Message list: unread states, stars, labels, attachments, live search
-  - Reading pane: full message view with attachments and Reply / Reply all /
-    Forward
-  - Compose dialog: From-address (alias) picker, To/Cc/Bcc, subject, body
-- All interactions (folder switching, search, star, mark-as-read, reply
-  pre-fill) work in the UI with mock data.
+- `/mail` — Gmail-style mail app (Roboto font, Gmail layout and interactions):
+  - Top bar: pill-shaped search, help/settings/apps icons, account menu
+  - Sidebar: light-blue Compose button, folders (Inbox, Starred, Sent,
+    Drafts, Archive, Spam, Trash) with Gmail-style active pill, labels,
+    storage meter; right-hand icon rail (Calendar, Notes, Tasks, Contacts)
+  - Inbox category tabs: Primary / Promotions / Social
+  - Message list: Gmail rows with checkbox selection, stars, hover actions
+    (archive, delete, mark unread, snooze), unread/read shading, select-all
+    toolbar with pagination
+  - Reading view: Gmail-style full-page message with toolbar (back, archive,
+    spam, delete, snooze), attachment cards, Reply / Forward pill buttons
+- `/mail/compose` — **full-page** compose (not a popup): From-address (alias)
+  picker, To/Cc/Bcc, subject, formatting toolbar, Gmail-style split Send
+  button; sending adds the message to Sent, "Save draft" adds it to Drafts
+- All interactions (folder switching, tabs, search, star, mark-as-read,
+  archive/delete, reply/forward pre-fill, send/draft) work in the UI with
+  mock data held in `MailProvider` state.
 
 **Phase 2 — functionality (planned).**
 

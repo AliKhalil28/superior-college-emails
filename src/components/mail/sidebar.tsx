@@ -1,20 +1,21 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import {
   Archive,
   FileText,
   Inbox,
   OctagonAlert,
+  Plus,
   Send,
   SquarePen,
   Star,
   Tag,
   Trash2,
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { folders, labels, type FolderId } from "@/lib/mock-data";
+import { useMail } from "@/components/mail/mail-context";
 import { cn } from "@/lib/utils";
 
 const folderIcons: Record<FolderId, typeof Inbox> = {
@@ -27,83 +28,92 @@ const folderIcons: Record<FolderId, typeof Inbox> = {
   trash: Trash2,
 };
 
-interface SidebarProps {
-  active: FolderId;
-  onSelect: (folder: FolderId) => void;
-  onCompose: () => void;
-}
+export function Sidebar() {
+  const router = useRouter();
+  const { folder, setFolder } = useMail();
 
-export function Sidebar({ active, onSelect, onCompose }: SidebarProps) {
+  const goFolder = (next: FolderId) => {
+    setFolder(next);
+    router.push("/mail");
+  };
+
   return (
-    <aside className="hidden w-60 shrink-0 flex-col border-r bg-background p-3 md:flex">
-      <Button
-        onClick={onCompose}
-        className="mb-4 h-11 w-full bg-[#c9a227] font-semibold text-[#231a00] shadow hover:bg-[#b8921f]"
-      >
-        <SquarePen className="mr-2 h-4 w-4" />
-        Compose
-      </Button>
+    <aside className="hidden w-64 shrink-0 flex-col bg-[#f6f8fc] py-2 pl-2 pr-4 md:flex">
+      <div className="mb-4 pl-2 pt-1">
+        <button
+          onClick={() => router.push("/mail/compose")}
+          className="flex h-14 items-center gap-3 rounded-2xl bg-[#c2e7ff] px-6 text-sm font-medium text-[#001d35] shadow-sm transition hover:shadow-md"
+        >
+          <SquarePen className="h-5 w-5" />
+          Compose
+        </button>
+      </div>
 
-      <nav className="space-y-0.5">
-        {folders.map((folder) => {
-          const Icon = folderIcons[folder.id];
-          const isActive = active === folder.id;
+      <nav className="space-y-px">
+        {folders.map((item) => {
+          const Icon = folderIcons[item.id];
+          const isActive = folder === item.id;
           return (
             <button
-              key={folder.id}
-              onClick={() => onSelect(folder.id)}
+              key={item.id}
+              onClick={() => goFolder(item.id)}
               className={cn(
-                "flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm transition",
+                "flex w-full items-center gap-4 rounded-r-full py-1.5 pl-4 pr-3 text-sm transition",
                 isActive
-                  ? "bg-primary/10 font-semibold text-primary"
-                  : "text-foreground/80 hover:bg-muted"
+                  ? "bg-[#d3e3fd] font-medium text-[#041e49]"
+                  : "text-[#202124] hover:bg-[#e8eaed]"
               )}
             >
-              <Icon className={cn("h-4 w-4", isActive && "fill-primary/20")} />
-              <span className="flex-1 text-left">{folder.label}</span>
-              {folder.unread ? (
-                <Badge className="h-5 min-w-5 justify-center rounded-full px-1.5 text-[11px]">
-                  {folder.unread}
-                </Badge>
-              ) : folder.count ? (
-                <span className="text-xs text-muted-foreground">{folder.count}</span>
+              <Icon
+                className={cn(
+                  "h-[18px] w-[18px]",
+                  item.id === "starred" && isActive && "fill-[#041e49]"
+                )}
+              />
+              <span className="flex-1 text-left">{item.label}</span>
+              {item.unread ? (
+                <span className="text-xs font-bold">{item.unread}</span>
+              ) : item.count ? (
+                <span className="text-xs text-[#5f6368]">{item.count}</span>
               ) : null}
             </button>
           );
         })}
       </nav>
 
-      <Separator className="my-4" />
+      <Separator className="my-3 bg-[#e0e4ea]" />
 
-      <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-        Labels
-      </p>
-      <div className="space-y-0.5">
+      <div className="mb-1 flex items-center justify-between pl-4 pr-1">
+        <p className="text-sm font-medium text-[#202124]">Labels</p>
+        <button
+          className="flex h-7 w-7 items-center justify-center rounded-full text-[#5f6368] transition hover:bg-[#e8eaed]"
+          aria-label="Create label"
+        >
+          <Plus className="h-4 w-4" />
+        </button>
+      </div>
+      <div className="space-y-px">
         {labels.map((label) => (
           <button
             key={label.name}
-            className="flex w-full items-center gap-3 rounded-md px-3 py-1.5 text-sm text-foreground/80 transition hover:bg-muted"
+            className="flex w-full items-center gap-4 rounded-r-full py-1.5 pl-4 pr-3 text-sm text-[#202124] transition hover:bg-[#e8eaed]"
           >
-            <Tag className={cn("h-3.5 w-3.5", label.color.replace("bg-", "text-"))} />
+            <Tag className={cn("h-[18px] w-[18px]", label.color.replace("bg-", "text-"))} />
             {label.name}
           </button>
         ))}
       </div>
 
-      <div className="mt-auto space-y-3 pt-4">
-        <div className="rounded-lg border bg-muted/40 p-3">
-          <p className="text-xs font-medium">Mailbox storage</p>
-          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
-            <div className="h-full w-[18%] rounded-full bg-primary" />
-          </div>
-          <p className="mt-1.5 text-[11px] text-muted-foreground">1.8 GB of 10 GB used</p>
+      <div className="mt-auto px-4 pb-2 pt-4">
+        <div className="h-1 overflow-hidden rounded-full bg-[#e0e4ea]">
+          <div className="h-full w-[18%] rounded-full bg-[#5f6368]" />
         </div>
-        <div className="rounded-lg border border-[#c9a227]/40 bg-[#c9a227]/5 p-3">
-          <p className="text-xs font-medium">Hostinger plan</p>
-          <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-            30 mailboxes on superiorcollegemc.com — 9 created so far.
-          </p>
-        </div>
+        <p className="mt-2 text-xs text-[#5f6368]">1.8 GB of 10 GB used</p>
+        <p className="mt-2 text-xs leading-relaxed text-[#5f6368]">
+          Hostinger plan · 30 mailboxes
+          <br />
+          superiorcollegemc.com
+        </p>
       </div>
     </aside>
   );

@@ -1,143 +1,151 @@
 "use client";
 
-import { Paperclip, RefreshCw, SearchX, Star } from "lucide-react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Archive, Clock, MailOpen, Paperclip, SearchX, Star, Trash2 } from "lucide-react";
+import { toast } from "sonner";
+import { Checkbox } from "@/components/ui/checkbox";
 import type { Email } from "@/lib/mock-data";
+import { useMail } from "@/components/mail/mail-context";
 import { cn } from "@/lib/utils";
 
 interface EmailListProps {
-  title: string;
   emails: Email[];
-  selectedId: string | null;
+  selectedIds: Set<string>;
+  onToggleSelect: (id: string, checked: boolean) => void;
   onSelect: (email: Email) => void;
-  onToggleStar: (id: string) => void;
 }
 
-export function EmailList({ title, emails, selectedId, onSelect, onToggleStar }: EmailListProps) {
-  return (
-    <section className="flex w-full shrink-0 flex-col border-r bg-background sm:w-[340px] lg:w-[380px]">
-      <div className="flex h-12 items-center justify-between border-b px-4">
-        <h2 className="text-sm font-semibold capitalize">{title}</h2>
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <span>{emails.length} messages</span>
-          <button className="rounded-full p-1.5 transition hover:bg-muted" aria-label="Refresh">
-            <RefreshCw className="h-3.5 w-3.5" />
-          </button>
-        </div>
-      </div>
+export function EmailList({ emails, selectedIds, onToggleSelect, onSelect }: EmailListProps) {
+  const { toggleStar, moveToFolder } = useMail();
 
-      <ScrollArea className="flex-1">
-        {emails.length === 0 ? (
-          <div className="flex flex-col items-center gap-2 px-6 py-16 text-center">
-            <SearchX className="h-8 w-8 text-muted-foreground/60" />
-            <p className="text-sm font-medium">Nothing here</p>
-            <p className="text-xs text-muted-foreground">
-              No messages match in this folder right now.
-            </p>
-          </div>
-        ) : (
-          <ul className="divide-y">
-            {emails.map((email) => {
-              const isSelected = email.id === selectedId;
-              return (
-                <li key={email.id}>
-                  <button
-                    onClick={() => onSelect(email)}
-                    className={cn(
-                      "relative flex w-full gap-3 px-4 py-3 text-left transition",
-                      isSelected ? "bg-primary/10" : "hover:bg-muted/60",
-                      email.unread && !isSelected && "bg-emerald-50/60 dark:bg-emerald-950/20"
-                    )}
-                  >
-                    {email.unread && (
-                      <span className="absolute left-1.5 top-1/2 h-2 w-2 -translate-y-1/2 rounded-full bg-primary" />
-                    )}
-                    <Avatar className="mt-0.5 h-9 w-9 shrink-0">
-                      <AvatarFallback
-                        className={cn("text-xs font-semibold text-white", email.from.color)}
-                      >
-                        {email.from.initials}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="min-w-0 flex-1">
-                      <span className="flex items-baseline justify-between gap-2">
-                        <span
-                          className={cn(
-                            "truncate text-sm",
-                            email.unread ? "font-bold" : "font-medium"
-                          )}
-                        >
-                          {email.from.name}
-                        </span>
-                        <span
-                          className={cn(
-                            "shrink-0 text-[11px]",
-                            email.unread ? "font-semibold text-primary" : "text-muted-foreground"
-                          )}
-                        >
-                          {email.date === "Today" || email.date === "Yesterday"
-                            ? email.time
-                            : email.date}
-                        </span>
-                      </span>
-                      <span
-                        className={cn(
-                          "mt-0.5 block truncate text-[13px]",
-                          email.unread ? "font-semibold" : "font-medium text-foreground/90"
-                        )}
-                      >
-                        {email.subject}
-                      </span>
-                      <span className="mt-0.5 block truncate text-xs text-muted-foreground">
-                        {email.preview}
-                      </span>
-                      <span className="mt-1.5 flex items-center gap-2">
-                        {email.hasAttachment && (
-                          <Paperclip className="h-3.5 w-3.5 text-muted-foreground" />
-                        )}
-                        {email.labels?.map((label) => (
-                          <span
-                            key={label}
-                            className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground"
-                          >
-                            {label}
-                          </span>
-                        ))}
-                      </span>
-                    </span>
-                    <span
-                      role="button"
-                      tabIndex={0}
-                      aria-label={email.starred ? "Unstar" : "Star"}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onToggleStar(email.id);
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.stopPropagation();
-                          onToggleStar(email.id);
-                        }
-                      }}
-                      className="mt-1 shrink-0 self-start rounded-full p-0.5"
-                    >
-                      <Star
-                        className={cn(
-                          "h-4 w-4 transition",
-                          email.starred
-                            ? "fill-amber-400 text-amber-400"
-                            : "text-muted-foreground/50 hover:text-amber-400"
-                        )}
-                      />
-                    </span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </ScrollArea>
-    </section>
+  if (emails.length === 0) {
+    return (
+      <div className="flex flex-1 flex-col items-center justify-center gap-2 px-6 py-20 text-center">
+        <SearchX className="h-10 w-10 text-[#5f6368]/50" />
+        <p className="text-sm font-medium text-[#202124]">No messages found</p>
+        <p className="text-[13px] text-[#5f6368]">
+          There are no messages matching your search or this folder is empty.
+        </p>
+      </div>
+    );
+  }
+
+  const rowAction = (
+    e: React.MouseEvent,
+    action: () => void,
+    message: string
+  ) => {
+    e.stopPropagation();
+    action();
+    toast.success(message);
+  };
+
+  return (
+    <ul className="divide-y divide-[#e8eaed]">
+      {emails.map((email) => {
+        const checked = selectedIds.has(email.id);
+        return (
+          <li key={email.id}>
+            <div
+              onClick={() => onSelect(email)}
+              className={cn(
+                "group relative flex cursor-pointer items-center gap-2 px-3 py-2.5 text-sm transition sm:gap-3 sm:px-4",
+                email.unread ? "bg-white" : "bg-[#f2f6fc]",
+                "hover:z-10 hover:shadow-[inset_0_-1px_0_#dadce0,0_1px_3px_rgba(60,64,67,0.3)]"
+              )}
+            >
+              <span onClick={(e) => e.stopPropagation()} className="flex items-center">
+                <Checkbox
+                  checked={checked}
+                  onCheckedChange={(v) => onToggleSelect(email.id, v === true)}
+                  aria-label="Select message"
+                  className="border-[#5f6368]"
+                />
+              </span>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleStar(email.id);
+                }}
+                aria-label={email.starred ? "Unstar" : "Star"}
+                className="shrink-0 rounded-full p-0.5"
+              >
+                <Star
+                  className={cn(
+                    "h-[18px] w-[18px] transition",
+                    email.starred
+                      ? "fill-amber-400 text-amber-400"
+                      : "text-[#5f6368]/60 hover:text-amber-400"
+                  )}
+                />
+              </button>
+
+              <span
+                className={cn(
+                  "w-32 shrink-0 truncate sm:w-44",
+                  email.unread ? "font-bold text-[#202124]" : "text-[#202124]"
+                )}
+              >
+                {email.from.name}
+              </span>
+
+              <span className="min-w-0 flex-1 truncate">
+                <span className={cn(email.unread ? "font-bold text-[#202124]" : "text-[#202124]")}>
+                  {email.subject}
+                </span>
+                <span className="text-[#5f6368]"> — {email.preview}</span>
+              </span>
+
+              {email.hasAttachment && (
+                <Paperclip className="h-4 w-4 shrink-0 text-[#5f6368]" />
+              )}
+
+              <span
+                className={cn(
+                  "w-14 shrink-0 text-right text-xs group-hover:hidden",
+                  email.unread ? "font-bold text-[#202124]" : "text-[#5f6368]"
+                )}
+              >
+                {email.date === "Today" || email.date === "Yesterday" ? email.time : email.date}
+              </span>
+
+              <span className="hidden shrink-0 items-center gap-0.5 group-hover:flex">
+                <button
+                  className="rounded-full p-1.5 text-[#5f6368] hover:bg-[#e8eaed]"
+                  aria-label="Archive"
+                  onClick={(e) =>
+                    rowAction(e, () => moveToFolder(email.id, "archive"), "Conversation archived")
+                  }
+                >
+                  <Archive className="h-4 w-4" />
+                </button>
+                <button
+                  className="rounded-full p-1.5 text-[#5f6368] hover:bg-[#e8eaed]"
+                  aria-label="Delete"
+                  onClick={(e) =>
+                    rowAction(e, () => moveToFolder(email.id, "trash"), "Conversation moved to Trash")
+                  }
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+                <button
+                  className="rounded-full p-1.5 text-[#5f6368] hover:bg-[#e8eaed]"
+                  aria-label="Mark as unread"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <MailOpen className="h-4 w-4" />
+                </button>
+                <button
+                  className="rounded-full p-1.5 text-[#5f6368] hover:bg-[#e8eaed]"
+                  aria-label="Snooze"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Clock className="h-4 w-4" />
+                </button>
+              </span>
+            </div>
+          </li>
+        );
+      })}
+    </ul>
   );
 }

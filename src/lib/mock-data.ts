@@ -29,6 +29,7 @@ export interface Email {
   hasAttachment?: boolean;
   attachments?: { name: string; size: string }[];
   labels?: string[];
+  category?: "primary" | "promotions" | "social";
 }
 
 export const currentUser = {
@@ -257,6 +258,59 @@ export const emails: Email[] = [
     date: "Nov 10",
     time: "3:26 PM",
     labels: ["Official"],
+  },
+  {
+    id: "m13",
+    folder: "inbox",
+    from: u("Hostinger Offers", "offers@hostinger.com", "HO", "bg-violet-600"),
+    to: "ali.khalil@superiorcollegemc.com",
+    subject: "Renewal season: up to 78% off hosting plans",
+    preview:
+      "Your email plan is in good standing. This week only, renew or upgrade any hosting plan with up to 78% off and free domain…",
+    body: [
+      "Hi there,",
+      "Your email plan is in good standing. This week only, renew or upgrade any hosting plan with up to 78% off and a free domain for the first year.",
+      "The Hostinger Team",
+    ],
+    date: "Nov 12",
+    time: "7:14 AM",
+    category: "promotions",
+  },
+  {
+    id: "m14",
+    folder: "inbox",
+    from: u("Facebook", "notification@facebookmail.com", "FB", "bg-blue-600"),
+    to: "ali.khalil@superiorcollegemc.com",
+    subject: "Superior College Mian Channu: 128 new page views this week",
+    preview:
+      "Your Page had 128 views and 36 new interactions this week. See insights for your recent admissions post…",
+    body: [
+      "Hi Ali,",
+      "Your Page, Superior College Mian Channu, had 128 views and 36 new interactions this week.",
+      "See insights for your recent admissions post to learn what worked.",
+      "The Facebook Team",
+    ],
+    date: "Nov 11",
+    time: "8:02 PM",
+    category: "social",
+  },
+  {
+    id: "m15",
+    folder: "inbox",
+    from: u("LinkedIn", "invitations@linkedin.com", "IN", "bg-sky-800"),
+    to: "ali.khalil@superiorcollegemc.com",
+    subject: "You have 3 new connection invitations",
+    preview:
+      "People from education and IT in Punjab want to connect with you. Review your pending invitations…",
+    body: [
+      "Hi Ali,",
+      "You have 3 new connection invitations from people in education and IT in Punjab.",
+      "Review your pending invitations on LinkedIn.",
+      "The LinkedIn Team",
+    ],
+    date: "Nov 10",
+    time: "9:45 AM",
+    category: "social",
   },
   {
     id: "m11",
