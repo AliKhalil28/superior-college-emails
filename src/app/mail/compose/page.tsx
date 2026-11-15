@@ -39,41 +39,43 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useMail } from "@/components/mail/mail-context";
 import { currentUser, type Email } from "@/lib/mock-data";
+import { useLocalStorage } from "@/lib/use-local-storage";
 
 export default function ComposePage() {
   const router = useRouter();
   const { prefill, setPrefill, addOutgoing } = useMail();
 
-  const [from, setFrom] = useState(currentUser.addresses[0]);
-  const [to, setTo] = useState("");
+  const [savedDefaultFrom] = useLocalStorage("sm-default-from", currentUser.addresses[0]);
+  const [savedSig] = useLocalStorage("sm-signature", "");
+
+  const [fromOverride, setFromOverride] = useState<string | null>(null);
+  const from = fromOverride ?? savedDefaultFrom;
+
+  const [to, setTo] = useState(() => prefill?.to ?? "");
   const [cc, setCc] = useState("");
   const [bcc, setBcc] = useState("");
-  const [subject, setSubject] = useState("");
-  const [body, setBody] = useState("");
+  const [subject, setSubject] = useState(() => prefill?.subject ?? "");
+
+  const [bodyDraft, setBodyDraft] = useState<string | null>(null);
+  const initialBody = (prefill?.body ?? "") + (savedSig ?? "");
+  const body = bodyDraft ?? initialBody;
+
   const [showCc, setShowCc] = useState(false);
   const [showBcc, setShowBcc] = useState(false);
   type Attachment = { name: string; size: string; progress: number; done: boolean };
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [confidential, setConfidential] = useState(false);
   const uploading = attachments.some((a) => !a.done);
+  const wasUploadingRef = useRef(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const bodyRef = useRef<HTMLTextAreaElement>(null);
 
+  // Clear consumed prefill upon exiting the compose flow
   useEffect(() => {
-    const savedFrom = window.localStorage.getItem("sm-default-from");
-    if (savedFrom) setFrom(savedFrom);
-    const savedSig = window.localStorage.getItem("sm-signature");
-    if (prefill) {
-      setTo(prefill.to ?? "");
-      setSubject(prefill.subject ?? "");
-      setBody((prefill.body ?? "") + (savedSig ?? ""));
+    return () => {
       setPrefill(null);
-    } else if (savedSig) {
-      setBody(savedSig);
-    }
-    // Only consume the prefill/settings once, on mount.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    };
+  }, [setPrefill]);
 
   const wrapSelection = (before: string, after: string) => {
     const ta = bodyRef.current;
@@ -82,7 +84,7 @@ export default function ComposePage() {
     const end = ta.selectionEnd ?? body.length;
     const selected = body.slice(start, end) || "text";
     const next = body.slice(0, start) + before + selected + after + body.slice(end);
-    setBody(next);
+    setBodyDraft(next);
     requestAnimationFrame(() => {
       ta.focus();
       ta.setSelectionRange(start + before.length, start + before.length + selected.length);
@@ -92,11 +94,11 @@ export default function ComposePage() {
   const insertAtCursor = (text: string) => {
     const ta = bodyRef.current;
     if (!ta) {
-      setBody((b) => b + text);
+      setBodyDraft(body + text);
       return;
     }
     const start = ta.selectionStart ?? body.length;
-    setBody(body.slice(0, start) + text + body.slice(start));
+    setBodyDraft(body.slice(0, start) + text + body.slice(start));
     requestAnimationFrame(() => ta.focus());
   };
 
@@ -117,7 +119,17 @@ export default function ComposePage() {
   // Simulated upload progress — each file visibly uploads, then is confirmed
   // ready so the sender knows it will go out with the message.
   useEffect(() => {
-    if (!attachments.some((a) => !a.done)) return;
+    if (!uploading) {
+      if (wasUploadingRef.current && attachments.length > 0) {
+        toast.success(
+          `${attachments.length} file${attachments.length > 1 ? "s" : ""} uploaded — will be sent with this email`
+        );
+      }
+      wasUploadingRef.current = false;
+      return;
+    }
+
+    wasUploadingRef.current = true;
     const timer = setInterval(() => {
       setAttachments((prev) =>
         prev.map((a) => {
@@ -128,17 +140,7 @@ export default function ComposePage() {
       );
     }, 160);
     return () => clearInterval(timer);
-  }, [attachments]);
-
-  useEffect(() => {
-    if (attachments.length > 0 && attachments.every((a) => a.done)) {
-      toast.success(
-        `${attachments.length} file${attachments.length > 1 ? "s" : ""} uploaded — will be sent with this email`
-      );
-    }
-    // Fire only when the set completes; attachments identity changes each tick.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [attachments.every((a) => a.done)]);
+  }, [uploading, attachments.length]);
 
   const buildEmail = (folder: "sent" | "drafts"): Email => ({
     id: `local-${Date.now()}`,
@@ -214,7 +216,7 @@ export default function ComposePage() {
       <div className="mx-3 flex min-h-0 flex-1 flex-col overflow-hidden rounded-t-2xl border border-[#e0e4ea] shadow-sm sm:mx-4">
         <div className={fieldRow}>
           <span className={fieldLabel}>From</span>
-          <Select value={from} onValueChange={(v) => setFrom(v ?? currentUser.addresses[0])}>
+          <Select value={from} onValueChange={(v) => setFromOverride(v ?? currentUser.addresses[0])}>
             <SelectTrigger className="h-9 w-full border-0 shadow-none focus:ring-0">
               <SelectValue />
             </SelectTrigger>
@@ -340,7 +342,7 @@ export default function ComposePage() {
         <Textarea
           ref={bodyRef}
           value={body}
-          onChange={(e) => setBody(e.target.value)}
+          onChange={(e) => setBodyDraft(e.target.value)}
           placeholder="Write your message…"
           className="min-h-0 flex-1 resize-none rounded-none border-0 p-4 text-sm leading-relaxed shadow-none focus-visible:ring-0"
         />

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, KeyRound, MailCheck, PenLine, Plane, UserRound } from "lucide-react";
 import { toast } from "sonner";
@@ -19,36 +19,41 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { currentUser } from "@/lib/mock-data";
+import { useLocalStorage } from "@/lib/use-local-storage";
 
 export default function SettingsPage() {
   const router = useRouter();
-  const [displayName, setDisplayName] = useState(currentUser.name);
-  const [defaultFrom, setDefaultFrom] = useState(currentUser.addresses[0]);
-  const [signature, setSignature] = useState(
-    `\n\n--\n${currentUser.name}\n${currentUser.role}\nSuperior College Mian Channu`
-  );
+
+  const defaultSignature = `\n\n--\n${currentUser.name}\n${currentUser.role}\nSuperior College Mian Channu`;
+
+  const [savedName, setSavedName] = useLocalStorage("sm-display-name", currentUser.name);
+  const [savedFrom, setSavedFrom] = useLocalStorage("sm-default-from", currentUser.addresses[0]);
+  const [savedSig, setSavedSig] = useLocalStorage("sm-signature", defaultSignature);
+
+  const [nameDraft, setNameDraft] = useState<string | null>(null);
+  const [fromDraft, setFromDraft] = useState<string | null>(null);
+  const [sigDraft, setSigDraft] = useState<string | null>(null);
+
+  const displayName = nameDraft ?? savedName;
+  const defaultFrom = fromDraft ?? savedFrom;
+  const signature = sigDraft ?? savedSig;
+
   const [vacationOn, setVacationOn] = useState(false);
   const [vacationMsg, setVacationMsg] = useState(
     "Thank you for your email. I am currently away and will reply on my return. For urgent matters, please contact the college office."
   );
 
-  useEffect(() => {
-    const savedSig = window.localStorage.getItem("sm-signature");
-    if (savedSig) setSignature(savedSig);
-    const savedFrom = window.localStorage.getItem("sm-default-from");
-    if (savedFrom) setDefaultFrom(savedFrom);
-    const savedName = window.localStorage.getItem("sm-display-name");
-    if (savedName) setDisplayName(savedName);
-  }, []);
-
   const saveProfile = () => {
-    window.localStorage.setItem("sm-display-name", displayName);
+    setSavedName(displayName);
+    setNameDraft(null);
     toast.success("Profile saved");
   };
 
   const saveGeneral = () => {
-    window.localStorage.setItem("sm-default-from", defaultFrom);
-    window.localStorage.setItem("sm-signature", signature);
+    setSavedFrom(defaultFrom);
+    setSavedSig(signature);
+    setFromDraft(null);
+    setSigDraft(null);
     toast.success("Settings saved — new messages will use this signature");
   };
 
@@ -98,7 +103,7 @@ export default function SettingsPage() {
                 <Input
                   id="display-name"
                   value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
+                  onChange={(e) => setNameDraft(e.target.value)}
                 />
               </div>
               <div className="grid gap-2">
@@ -130,7 +135,7 @@ export default function SettingsPage() {
                 <Label>Send mail as (default)</Label>
                 <Select
                   value={defaultFrom}
-                  onValueChange={(v) => setDefaultFrom(v ?? currentUser.addresses[0])}
+                  onValueChange={(v) => setFromDraft(v ?? currentUser.addresses[0])}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -149,7 +154,7 @@ export default function SettingsPage() {
                 <Textarea
                   id="signature"
                   value={signature}
-                  onChange={(e) => setSignature(e.target.value)}
+                  onChange={(e) => setSigDraft(e.target.value)}
                   className="min-h-28"
                 />
                 <p className="text-xs text-muted-foreground">

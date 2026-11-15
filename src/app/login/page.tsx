@@ -3,7 +3,8 @@
 import { useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff, Inbox, Lock, Mail, MailQuestion } from "lucide-react";
+import { Eye, EyeOff, Inbox, Loader2, Lock, Mail, MailQuestion } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -20,8 +21,40 @@ import { Label } from "@/components/ui/label";
 
 export default function LoginPage() {
   const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [forgotOpen, setForgotOpen] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        toast.error(data.error || "Authentication failed", {
+          description: data.details,
+        });
+        setLoading(false);
+        return;
+      }
+
+      toast.success(`Signed in as ${data.user?.name || email}`);
+      router.push("/mail");
+    } catch {
+      toast.error("Network error while connecting to mail server");
+      setLoading(false);
+    }
+  };
 
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center bg-[#f6f8fc] px-4 py-10">
@@ -55,13 +88,7 @@ export default function LoginPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form
-              className="space-y-4"
-              onSubmit={(e) => {
-                e.preventDefault();
-                router.push("/mail");
-              }}
-            >
+            <form className="space-y-4" onSubmit={handleSubmit}>
               <div className="space-y-2">
                 <Label htmlFor="email">Email address</Label>
                 <div className="relative">
@@ -70,9 +97,12 @@ export default function LoginPage() {
                     id="email"
                     type="email"
                     required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     placeholder="your.name@superiorcollegemc.com"
                     className="pl-9"
                     autoComplete="username"
+                    disabled={loading}
                   />
                 </div>
               </div>
@@ -94,9 +124,12 @@ export default function LoginPage() {
                     id="password"
                     type={showPassword ? "text" : "password"}
                     required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
                     placeholder="Your mailbox password"
                     className="pl-9 pr-10"
                     autoComplete="current-password"
+                    disabled={loading}
                   />
                   <button
                     type="button"
@@ -116,14 +149,13 @@ export default function LoginPage() {
                 </Label>
               </div>
 
-              <Button type="submit" className="w-full" size="lg">
-                Sign in to your inbox
+              <Button type="submit" className="w-full" size="lg" disabled={loading}>
+                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {loading ? "Authenticating with Hostinger…" : "Sign in to your inbox"}
               </Button>
 
               <p className="text-center text-xs leading-relaxed text-muted-foreground">
-                This portal connects to the college mailbox on Hostinger. Sign-in
-                verification starts in the next phase — for now this opens the design
-                preview.
+                Authenticates directly against your Hostinger mailbox (<span className="font-medium text-[#0b3d2a]">superiorcollegemc.com</span>).
               </p>
             </form>
           </CardContent>

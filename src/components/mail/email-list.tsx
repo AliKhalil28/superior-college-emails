@@ -46,9 +46,19 @@ export function EmailList({ emails, selectedIds, onToggleSelect, onSelect }: Ema
         return (
           <li key={email.id}>
             <div
+              role="button"
+              tabIndex={0}
+              aria-label={`Open conversation from ${email.from.name}, subject: ${email.subject}`}
               onClick={() => onSelect(email)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  onSelect(email);
+                }
+              }}
               className={cn(
-                "group relative flex cursor-pointer items-center gap-2 px-3 py-2.5 text-sm transition sm:gap-3 sm:px-4",
+                "group relative flex cursor-pointer items-center gap-2 px-3 py-2.5 text-sm transition outline-none sm:gap-3 sm:px-4",
+                "focus-visible:z-20 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#0b57d0]",
                 email.unread ? "bg-white" : "bg-[#f2f6fc]",
                 "hover:z-10 hover:shadow-[inset_0_-1px_0_#dadce0,0_1px_3px_rgba(60,64,67,0.3)]"
               )}
