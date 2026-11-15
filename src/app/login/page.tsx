@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff, Inbox, Lock, Mail, MailQuestion, Send, ShieldCheck, Users } from "lucide-react";
+import { Eye, EyeOff, Inbox, Lock, Mail, MailQuestion } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -18,24 +18,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-const features = [
-  {
-    icon: Users,
-    title: "30 mailboxes, one plan",
-    text: "Every staff member gets their own @superiorcollegemc.com address and login.",
-  },
-  {
-    icon: Send,
-    title: "Send & receive anywhere",
-    text: "Mail moves through standard SMTP/IMAP, so the portal and mobile apps stay in sync.",
-  },
-  {
-    icon: ShieldCheck,
-    title: "Private & secure",
-    text: "Your mail stays on the college's own mailbox — no personal Gmail or WhatsApp for official work.",
-  },
-];
-
 export default function LoginPage() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
@@ -43,64 +25,68 @@ export default function LoginPage() {
 
   return (
     <main className="grid min-h-screen lg:grid-cols-2">
-      {/* Brand panel */}
-      <section className="relative hidden flex-col justify-between overflow-hidden bg-[#0b3d2a] p-10 text-white lg:flex">
-        <div
-          className="pointer-events-none absolute inset-0 opacity-[0.07]"
-          style={{
-            backgroundImage: "radial-gradient(circle at 1px 1px, #fff 1px, transparent 0)",
-            backgroundSize: "26px 26px",
-          }}
+      {/* Brand panel — campus hero image from superiorcollegemc.com */}
+      <section className="relative hidden flex-col justify-between overflow-hidden text-white lg:flex">
+        <Image
+          src="/campus-hero.jpg"
+          alt="Superior College Mian Channu campus"
+          fill
+          priority
+          sizes="50vw"
+          className="object-cover"
         />
-        <div className="relative flex items-center gap-3">
-          <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-full bg-white p-1">
+        <div className="absolute inset-0 bg-gradient-to-t from-[#06231a]/90 via-[#06231a]/10 to-[#06231a]/30" />
+
+        <div className="relative flex items-center gap-3 p-10">
+          <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-full bg-white p-1 shadow-lg">
             <Image src="/logo.png" alt="Superior College crest" width={48} height={48} />
           </div>
-          <div>
+          <div className="drop-shadow">
             <p className="text-lg font-semibold leading-tight">Superior College</p>
-            <p className="text-sm text-emerald-200/90">Mian Channu</p>
+            <p className="text-sm text-white/85">Mian Channu</p>
           </div>
         </div>
 
-        <div className="relative max-w-md">
-          <p className="mb-3 inline-block rounded-full border border-[#c9a227]/50 bg-[#c9a227]/10 px-3 py-1 text-xs font-medium tracking-wide text-[#e8c96a]">
+        <div className="relative p-10">
+          <p className="mb-3 inline-block rounded-full border border-[#c9a227]/60 bg-black/25 px-3 py-1 text-xs font-medium tracking-wide text-[#e8c96a] backdrop-blur-sm">
             OFFICIAL EMAIL PORTAL
           </p>
-          <h1 className="text-4xl font-bold leading-tight">
+          <h1 className="text-4xl font-bold leading-tight drop-shadow">
             Superior Mail
-            <span className="mt-1 block text-xl font-medium text-emerald-100/90">
+            <span className="mt-1 block text-xl font-medium text-white/90">
               Learn Today. Lead Tomorrow.
             </span>
           </h1>
-          <div className="mt-8 space-y-5">
-            {features.map((f) => (
-              <div key={f.title} className="flex gap-3.5">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/10">
-                  <f.icon className="h-5 w-5 text-[#e8c96a]" />
-                </div>
-                <div>
-                  <p className="font-medium">{f.title}</p>
-                  <p className="text-sm leading-relaxed text-emerald-100/75">{f.text}</p>
-                </div>
-              </div>
-            ))}
-          </div>
+          <p className="mt-4 text-xs text-white/70">
+            Multan Road, near NADRA Office, Mian Channu · mail.superiorcollegemc.com
+          </p>
         </div>
-
-        <p className="relative text-xs text-emerald-100/60">
-          Multan Road, near NADRA Office, Mian Channu · mail.superiorcollegemc.com
-        </p>
       </section>
 
       {/* Login panel */}
       <section className="flex items-center justify-center bg-muted/40 p-6">
         <div className="w-full max-w-md">
-          <div className="mb-6 flex flex-col items-center text-center lg:hidden">
-            <div className="mb-3 flex h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-white p-1 shadow">
-              <Image src="/logo.png" alt="Superior College crest" width={56} height={56} />
+          <div className="mb-6 lg:hidden">
+            <div className="relative mb-5 h-44 w-full overflow-hidden rounded-2xl">
+              <Image
+                src="/campus-hero.jpg"
+                alt="Superior College Mian Channu campus"
+                fill
+                priority
+                sizes="100vw"
+                className="object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#06231a]/80 to-transparent" />
+              <div className="absolute bottom-3 left-4 flex items-center gap-2.5">
+                <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-white p-0.5">
+                  <Image src="/logo.png" alt="Superior College crest" width={36} height={36} />
+                </div>
+                <div className="text-white drop-shadow">
+                  <p className="font-semibold leading-tight">Superior Mail</p>
+                  <p className="text-xs text-white/85">Superior College Mian Channu</p>
+                </div>
+              </div>
             </div>
-            <h1 className="text-2xl font-bold text-[#0b3d2a]">Superior Mail</h1>
-            <p className="text-sm text-muted-foreground">Superior College Mian Channu</p>
           </div>
 
           <Card className="shadow-lg">
