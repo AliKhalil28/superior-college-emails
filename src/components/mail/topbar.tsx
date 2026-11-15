@@ -23,7 +23,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -156,7 +155,7 @@ export function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
             <CircleHelp className="h-5 w-5" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-64 rounded-2xl p-1.5">
-            <DropdownMenuLabel>Help</DropdownMenuLabel>
+            <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">Help</div>
             <DropdownMenuItem
               onClick={() =>
                 toast.info("IT Department", {
@@ -206,7 +205,9 @@ export function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
             <Grip className="h-5 w-5" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-72 rounded-2xl p-2">
-            <DropdownMenuLabel>Superior College apps</DropdownMenuLabel>
+            <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
+              Superior College apps
+            </div>
             <div className="grid grid-cols-3 gap-1 p-1">
               {collegeApps.map((app) => (
                 <a
@@ -235,13 +236,13 @@ export function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
             </Avatar>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-72 rounded-2xl p-2">
-            <DropdownMenuLabel className="px-3 py-2">
+            <div className="px-3 py-2">
               <p className="text-sm font-medium">{currentUser.name}</p>
               <p className="text-xs font-normal text-muted-foreground">{currentUser.role}</p>
               <p className="mt-0.5 truncate text-xs font-normal text-muted-foreground">
                 {currentUser.email}
               </p>
-            </DropdownMenuLabel>
+            </div>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => router.push("/mail/settings")}>
               <UserRound className="mr-2 h-4 w-4" /> Manage your account
