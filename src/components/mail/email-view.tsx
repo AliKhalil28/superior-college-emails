@@ -27,9 +27,22 @@ import { cn } from "@/lib/utils";
 interface EmailViewProps {
   email: Email;
   onBack: () => void;
+  positionLabel?: string;
+  onNewer?: () => void;
+  onOlder?: () => void;
+  hasNewer?: boolean;
+  hasOlder?: boolean;
 }
 
-export function EmailView({ email, onBack }: EmailViewProps) {
+export function EmailView({
+  email,
+  onBack,
+  positionLabel,
+  onNewer,
+  onOlder,
+  hasNewer,
+  hasOlder,
+}: EmailViewProps) {
   const router = useRouter();
   const { setPrefill, moveToFolder, toggleStar, markUnread, emails } = useMail();
 
@@ -116,13 +129,23 @@ export function EmailView({ email, onBack }: EmailViewProps) {
         </button>
         <div className="ml-auto flex items-center gap-1 text-xs text-[#5f6368]">
           <span className="mr-1 hidden sm:block">
-            {position} of {siblings.length}
+            {positionLabel ?? `${position} of ${siblings.length}`}
           </span>
-          <button className={toolbarBtn} aria-label="Newer">
-            <ChevronLeft className="h-5 w-5" />
+          <button
+            className={toolbarBtn}
+            aria-label="Newer"
+            disabled={!hasNewer}
+            onClick={onNewer}
+          >
+            <ChevronLeft className={cn("h-5 w-5", !hasNewer && "opacity-40")} />
           </button>
-          <button className={toolbarBtn} aria-label="Older">
-            <ChevronRight className="h-5 w-5" />
+          <button
+            className={toolbarBtn}
+            aria-label="Older"
+            disabled={!hasOlder}
+            onClick={onOlder}
+          >
+            <ChevronRight className={cn("h-5 w-5", !hasOlder && "opacity-40")} />
           </button>
         </div>
       </div>

@@ -104,7 +104,23 @@ export default function MailPage() {
   };
 
   if (openedEmail) {
-    return <EmailView email={openedEmail} onBack={() => setOpenedId(null)} />;
+    const idx = folderEmails.findIndex((e) => e.id === openedEmail.id);
+    const goTo = (target?: Email) => {
+      if (!target) return;
+      setOpenedId(target.id);
+      markRead(target.id);
+    };
+    return (
+      <EmailView
+        email={openedEmail}
+        onBack={() => setOpenedId(null)}
+        positionLabel={idx >= 0 ? `${idx + 1} of ${folderEmails.length}` : undefined}
+        hasNewer={idx > 0}
+        hasOlder={idx >= 0 && idx < folderEmails.length - 1}
+        onNewer={() => goTo(folderEmails[idx - 1])}
+        onOlder={() => goTo(folderEmails[idx + 1])}
+      />
+    );
   }
 
   const iconBtn =
