@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
@@ -26,7 +27,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { currentUser } from "@/lib/mock-data";
 import { useMail } from "@/components/mail/mail-context";
 
@@ -38,7 +42,29 @@ const collegeApps = [
 
 export function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
   const router = useRouter();
-  const { query, setQuery } = useMail();
+  const { query, setQuery, setAttachmentOnly } = useMail();
+  const [optionsOpen, setOptionsOpen] = useState(false);
+  const [fromField, setFromField] = useState("");
+  const [subjectField, setSubjectField] = useState("");
+  const [hasAtt, setHasAtt] = useState(false);
+
+  const applySearchOptions = () => {
+    const term = fromField.trim() || subjectField.trim();
+    setQuery(term);
+    setAttachmentOnly(hasAtt);
+    setOptionsOpen(false);
+    router.push("/mail");
+    toast.success("Search filters applied");
+  };
+
+  const clearSearchOptions = () => {
+    setFromField("");
+    setSubjectField("");
+    setHasAtt(false);
+    setQuery("");
+    setAttachmentOnly(false);
+    setOptionsOpen(false);
+  };
 
   const iconBtn =
     "hidden h-10 w-10 items-center justify-center rounded-full text-[#5f6368] transition hover:bg-[#e8eaed] sm:flex";
@@ -71,7 +97,57 @@ export function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
           placeholder="Search mail"
           className="h-12 rounded-full border-0 bg-[#eaeef3] pl-12 pr-12 text-[15px] shadow-none placeholder:text-[#5f6368] focus-visible:bg-white focus-visible:ring-0 focus-visible:shadow-md"
         />
-        <SlidersHorizontal className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#5f6368]" />
+        <DropdownMenu open={optionsOpen} onOpenChange={setOptionsOpen}>
+          <DropdownMenuTrigger
+            className="absolute right-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full text-[#5f6368] transition hover:bg-[#dadce0]"
+            aria-label="Show search options"
+          >
+            <SlidersHorizontal className="h-5 w-5" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-80 rounded-2xl p-4">
+            <p className="mb-3 text-sm font-medium text-[#202124]">Search options</p>
+            <div className="space-y-3">
+              <div className="grid gap-1.5">
+                <Label htmlFor="search-from">From</Label>
+                <Input
+                  id="search-from"
+                  value={fromField}
+                  onChange={(e) => setFromField(e.target.value)}
+                  placeholder="Sender name or address"
+                  className="h-9"
+                />
+              </div>
+              <div className="grid gap-1.5">
+                <Label htmlFor="search-subject">Subject</Label>
+                <Input
+                  id="search-subject"
+                  value={subjectField}
+                  onChange={(e) => setSubjectField(e.target.value)}
+                  placeholder="Words in the subject"
+                  className="h-9"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="search-att"
+                  checked={hasAtt}
+                  onCheckedChange={(v) => setHasAtt(v === true)}
+                />
+                <Label htmlFor="search-att" className="font-normal">
+                  Has attachment
+                </Label>
+              </div>
+              <div className="flex gap-2 pt-1">
+                <Button size="sm" className="flex-1" onClick={applySearchOptions}>
+                  Search
+                </Button>
+                <Button size="sm" variant="outline" className="flex-1" onClick={clearSearchOptions}>
+                  Clear
+                </Button>
+              </div>
+            </div>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       <div className="ml-auto flex items-center gap-0.5 sm:gap-1">

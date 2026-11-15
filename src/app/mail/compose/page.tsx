@@ -5,10 +5,12 @@ import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   Bold,
+  CheckCircle2,
   ChevronDown,
   ImagePlus,
   Italic,
   Link2,
+  Loader2,
   Lock,
   Paperclip,
   Redo2,
@@ -20,6 +22,12 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "sonner";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -44,8 +52,10 @@ export default function ComposePage() {
   const [body, setBody] = useState("");
   const [showCc, setShowCc] = useState(false);
   const [showBcc, setShowBcc] = useState(false);
-  const [attachments, setAttachments] = useState<{ name: string; size: string }[]>([]);
+  type Attachment = { name: string; size: string; progress: number; done: boolean };
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [confidential, setConfidential] = useState(false);
+  const uploading = attachments.some((a) => !a.done);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const bodyRef = useRef<HTMLTextAreaElement>(null);
 
@@ -92,16 +102,43 @@ export default function ComposePage() {
 
   const handleFiles = (files: FileList | null) => {
     if (!files) return;
-    const added = Array.from(files).map((f) => ({
+    const added: Attachment[] = Array.from(files).map((f) => ({
       name: f.name,
       size:
         f.size > 1024 * 1024
           ? `${(f.size / (1024 * 1024)).toFixed(1)} MB`
           : `${Math.max(1, Math.round(f.size / 1024))} KB`,
+      progress: 0,
+      done: false,
     }));
     setAttachments((prev) => [...prev, ...added]);
-    toast.success(`${added.length} file${added.length > 1 ? "s" : ""} attached`);
   };
+
+  // Simulated upload progress — each file visibly uploads, then is confirmed
+  // ready so the sender knows it will go out with the message.
+  useEffect(() => {
+    if (!attachments.some((a) => !a.done)) return;
+    const timer = setInterval(() => {
+      setAttachments((prev) =>
+        prev.map((a) => {
+          if (a.done) return a;
+          const next = Math.min(100, a.progress + 12 + Math.random() * 20);
+          return { ...a, progress: next, done: next >= 100 };
+        })
+      );
+    }, 160);
+    return () => clearInterval(timer);
+  }, [attachments]);
+
+  useEffect(() => {
+    if (attachments.length > 0 && attachments.every((a) => a.done)) {
+      toast.success(
+        `${attachments.length} file${attachments.length > 1 ? "s" : ""} uploaded — will be sent with this email`
+      );
+    }
+    // Fire only when the set completes; attachments identity changes each tick.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [attachments.every((a) => a.done)]);
 
   const buildEmail = (folder: "sent" | "drafts"): Email => ({
     id: `local-${Date.now()}`,
@@ -117,7 +154,10 @@ export default function ComposePage() {
     preview: body.trim().slice(0, 110) || "…",
     body: body ? [body] : [""],
     hasAttachment: attachments.length > 0,
-    attachments: attachments.length > 0 ? attachments : undefined,
+    attachments:
+      attachments.length > 0
+        ? attachments.map(({ name, size }) => ({ name, size }))
+        : undefined,
     date: "Today",
     time: new Date().toLocaleTimeString("en-US", {
       hour: "numeric",
@@ -126,8 +166,16 @@ export default function ComposePage() {
   });
 
   const handleSend = () => {
+    if (uploading) {
+      toast.info("Please wait — attachments are still uploading");
+      return;
+    }
     addOutgoing(buildEmail("sent"));
-    toast.success("Message sent");
+    toast.success(
+      attachments.length > 0
+        ? `Message sent with ${attachments.length} attachment${attachments.length > 1 ? "s" : ""}`
+        : "Message sent"
+    );
     router.push("/mail");
   };
 
@@ -298,26 +346,46 @@ export default function ComposePage() {
         />
 
         {attachments.length > 0 && (
-          <div className="flex flex-wrap gap-2 border-t border-[#e8eaed] px-4 py-2.5">
-            {attachments.map((att, i) => (
-              <span
-                key={`${att.name}-${i}`}
-                className="flex items-center gap-2 rounded-md bg-[#f2f6fc] py-1 pl-2.5 pr-1.5 text-xs font-medium text-[#202124]"
-              >
-                <Paperclip className="h-3.5 w-3.5 text-[#5f6368]" />
-                {att.name}
-                <span className="font-normal text-[#5f6368]">({att.size})</span>
-                <button
-                  aria-label={`Remove ${att.name}`}
-                  onClick={() =>
-                    setAttachments((prev) => prev.filter((_, idx) => idx !== i))
-                  }
-                  className="flex h-5 w-5 items-center justify-center rounded-full hover:bg-[#e8eaed]"
+          <div className="border-t border-[#e8eaed] px-4 py-2.5">
+            <div className="flex flex-wrap gap-2">
+              {attachments.map((att, i) => (
+                <span
+                  key={`${att.name}-${i}`}
+                  className="relative flex items-center gap-2 overflow-hidden rounded-md bg-[#f2f6fc] py-1.5 pl-2.5 pr-1.5 text-xs font-medium text-[#202124]"
                 >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              </span>
-            ))}
+                  {att.done ? (
+                    <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
+                  ) : (
+                    <Loader2 className="h-4 w-4 shrink-0 animate-spin text-[#0b57d0]" />
+                  )}
+                  <span className="max-w-44 truncate">{att.name}</span>
+                  <span className="font-normal text-[#5f6368]">({att.size})</span>
+                  <span className={att.done ? "font-normal text-emerald-700" : "font-normal text-[#0b57d0]"}>
+                    {att.done ? "Uploaded · will be sent" : `Uploading ${Math.round(att.progress)}%`}
+                  </span>
+                  <button
+                    aria-label={`Remove ${att.name}`}
+                    onClick={() =>
+                      setAttachments((prev) => prev.filter((_, idx) => idx !== i))
+                    }
+                    className="flex h-5 w-5 items-center justify-center rounded-full hover:bg-[#e8eaed]"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                  {!att.done && (
+                    <span
+                      className="absolute bottom-0 left-0 h-0.5 bg-[#0b57d0] transition-all"
+                      style={{ width: `${att.progress}%` }}
+                    />
+                  )}
+                </span>
+              ))}
+            </div>
+            <p className="mt-2 text-xs text-[#5f6368]">
+              {uploading
+                ? "Uploading attachments — Send will be enabled when the upload finishes."
+                : "All attachments uploaded. They will be shared with the recipient when you press Send."}
+            </p>
           </div>
         )}
 
@@ -336,17 +404,28 @@ export default function ComposePage() {
           <div className="flex overflow-hidden rounded-full shadow-sm">
             <button
               onClick={handleSend}
-              className="flex items-center gap-2 bg-[#0b57d0] py-2 pl-5 pr-3 text-sm font-medium text-white transition hover:bg-[#0842a0]"
+              disabled={uploading}
+              className="flex items-center gap-2 bg-[#0b57d0] py-2 pl-5 pr-3 text-sm font-medium text-white transition hover:bg-[#0842a0] disabled:cursor-not-allowed disabled:opacity-60"
             >
               <Send className="h-4 w-4" />
-              Send
+              {uploading ? "Uploading…" : "Send"}
             </button>
-            <button
-              className="border-l border-white/25 bg-[#0b57d0] px-1.5 text-white transition hover:bg-[#0842a0]"
-              aria-label="More send options"
-            >
-              <ChevronDown className="h-4 w-4" />
-            </button>
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                className="border-l border-white/25 bg-[#0b57d0] px-1.5 text-white transition hover:bg-[#0842a0]"
+                aria-label="More send options"
+              >
+                <ChevronDown className="h-4 w-4" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-52 rounded-xl">
+                <DropdownMenuItem onClick={handleSend}>
+                  <Send className="mr-2 h-4 w-4" /> Send now
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleSaveDraft}>
+                  <Paperclip className="mr-2 h-4 w-4" /> Save as draft instead
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
           <button

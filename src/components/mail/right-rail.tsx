@@ -1,32 +1,47 @@
 "use client";
 
-import { CalendarDays, CircleCheck, NotebookPen, Plus, UsersRound } from "lucide-react";
-import { Separator } from "@/components/ui/separator";
+import { CalendarDays, CircleCheckBig, Lightbulb, Plus, UsersRound } from "lucide-react";
+import { cn } from "@/lib/utils";
+import type { RailPanel } from "@/components/mail/side-panel";
 
-const items = [
-  { icon: CalendarDays, label: "Calendar", color: "text-[#0b57d0]" },
-  { icon: NotebookPen, label: "Notes", color: "text-amber-500" },
-  { icon: CircleCheck, label: "Tasks", color: "text-[#0b57d0]" },
-  { icon: UsersRound, label: "Contacts", color: "text-emerald-600" },
+const railItems: { id: Exclude<RailPanel, null>; label: string; icon: typeof CalendarDays }[] = [
+  { id: "calendar", label: "Calendar", icon: CalendarDays },
+  { id: "keep", label: "Notes", icon: Lightbulb },
+  { id: "tasks", label: "Tasks", icon: CircleCheckBig },
+  { id: "contacts", label: "Contacts", icon: UsersRound },
 ];
 
-export function RightRail() {
+export function RightRail({
+  active,
+  onSelect,
+}: {
+  active: RailPanel;
+  onSelect: (panel: RailPanel) => void;
+}) {
   return (
-    <div className="hidden w-14 shrink-0 flex-col items-center gap-2 bg-[#f6f8fc] py-3 xl:flex">
-      {items.map((item) => (
+    <div className="hidden w-14 shrink-0 flex-col items-center gap-1 py-2 md:flex">
+      {railItems.map((item) => (
         <button
-          key={item.label}
-          className="flex h-10 w-10 items-center justify-center rounded-full transition hover:bg-[#e8eaed]"
-          aria-label={item.label}
+          key={item.id}
           title={item.label}
+          aria-label={item.label}
+          onClick={() => onSelect(active === item.id ? null : item.id)}
+          className={cn(
+            "flex h-10 w-10 items-center justify-center rounded-full transition",
+            active === item.id
+              ? "bg-[#d3e3fd] text-[#041e49]"
+              : "text-[#5f6368] hover:bg-[#e8eaed]"
+          )}
         >
-          <item.icon className={`h-5 w-5 ${item.color}`} />
+          <item.icon className="h-5 w-5" />
         </button>
       ))}
-      <Separator className="my-1 w-6 bg-[#e0e4ea]" />
+      <div className="my-2 h-px w-6 bg-[#dadce0]" />
       <button
+        title="Add a task"
+        aria-label="Add a task"
+        onClick={() => onSelect("tasks")}
         className="flex h-10 w-10 items-center justify-center rounded-full text-[#5f6368] transition hover:bg-[#e8eaed]"
-        aria-label="Get add-ons"
       >
         <Plus className="h-5 w-5" />
       </button>

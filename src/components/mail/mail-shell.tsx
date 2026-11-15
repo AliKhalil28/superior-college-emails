@@ -5,21 +5,33 @@ import { useRouter } from "next/navigation";
 import { SquarePen, X } from "lucide-react";
 import { RightRail } from "@/components/mail/right-rail";
 import { Sidebar } from "@/components/mail/sidebar";
+import { SidePanel, type RailPanel } from "@/components/mail/side-panel";
 import { Topbar } from "@/components/mail/topbar";
 
 export function MailShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
+  const [panel, setPanel] = useState<RailPanel>(null);
+
+  const handleMenuClick = () => {
+    if (window.innerWidth < 768) {
+      setDrawerOpen(true);
+    } else {
+      setCollapsed((v) => !v);
+    }
+  };
 
   return (
     <div className="flex h-screen flex-col bg-[#f6f8fc]">
-      <Topbar onMenuClick={() => setDrawerOpen(true)} />
-      <div className="flex min-h-0 flex-1">
-        <Sidebar />
+      <Topbar onMenuClick={handleMenuClick} />
+      <div className="relative flex min-h-0 flex-1">
+        {!collapsed && <Sidebar />}
         <main className="mb-2 mr-2 flex min-w-0 flex-1 flex-col overflow-hidden rounded-2xl bg-white shadow-sm md:mr-0">
           {children}
         </main>
-        <RightRail />
+        {panel && <SidePanel panel={panel} onClose={() => setPanel(null)} />}
+        <RightRail active={panel} onSelect={setPanel} />
       </div>
 
       {/* Mobile drawer with folders/labels */}

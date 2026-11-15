@@ -39,8 +39,17 @@ const tabs: { id: Category; label: string; icon: typeof Inbox }[] = [
 ];
 
 export default function MailPage() {
-  const { emails, folder, query, markRead, markAllRead, labelFilter, setLabelFilter } =
-    useMail();
+  const {
+    emails,
+    folder,
+    query,
+    markRead,
+    markAllRead,
+    labelFilter,
+    setLabelFilter,
+    attachmentOnly,
+    setAttachmentOnly,
+  } = useMail();
   const [category, setCategory] = useState<Category>("primary");
   const [openedId, setOpenedId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -55,6 +64,9 @@ export default function MailPage() {
     if (!labelFilter && folder === "inbox") {
       list = list.filter((e) => (e.category ?? "primary") === category);
     }
+    if (attachmentOnly) {
+      list = list.filter((e) => e.hasAttachment);
+    }
     const q = query.trim().toLowerCase();
     if (q) {
       list = list.filter(
@@ -66,7 +78,7 @@ export default function MailPage() {
       );
     }
     return list;
-  }, [emails, folder, category, query, labelFilter]);
+  }, [emails, folder, category, query, labelFilter, attachmentOnly]);
 
   const openedEmail = emails.find((e) => e.id === openedId) ?? null;
   const folderLabel = folders.find((f) => f.id === folder)?.label ?? "Inbox";
@@ -156,6 +168,18 @@ export default function MailPage() {
               onClick={() => setLabelFilter(null)}
               className="flex h-5 w-5 items-center justify-center rounded-full hover:bg-white/60"
               aria-label="Clear label filter"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </span>
+        )}
+        {attachmentOnly && (
+          <span className="ml-2 flex items-center gap-1.5 rounded-full bg-[#d3e3fd] py-1 pl-3 pr-1.5 text-sm font-medium text-[#041e49]">
+            Has attachment
+            <button
+              onClick={() => setAttachmentOnly(false)}
+              className="flex h-5 w-5 items-center justify-center rounded-full hover:bg-white/60"
+              aria-label="Clear attachment filter"
             >
               <X className="h-3.5 w-3.5" />
             </button>

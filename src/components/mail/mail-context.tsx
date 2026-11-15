@@ -19,6 +19,8 @@ interface MailContextValue {
   setPrefill: (prefill: ComposePrefill | null) => void;
   labelFilter: string | null;
   setLabelFilter: (label: string | null) => void;
+  attachmentOnly: boolean;
+  setAttachmentOnly: (value: boolean) => void;
   toggleStar: (id: string) => void;
   markRead: (id: string) => void;
   markUnread: (id: string) => void;
@@ -35,6 +37,7 @@ export function MailProvider({ children }: { children: React.ReactNode }) {
   const [query, setQuery] = useState("");
   const [prefill, setPrefill] = useState<ComposePrefill | null>(null);
   const [labelFilter, setLabelFilter] = useState<string | null>(null);
+  const [attachmentOnly, setAttachmentOnly] = useState(false);
 
   const toggleStar = useCallback((id: string) => {
     setEmails((prev) =>
@@ -81,6 +84,8 @@ export function MailProvider({ children }: { children: React.ReactNode }) {
       setPrefill,
       labelFilter,
       setLabelFilter,
+      attachmentOnly,
+      setAttachmentOnly,
       toggleStar,
       markRead,
       markUnread,
@@ -94,6 +99,7 @@ export function MailProvider({ children }: { children: React.ReactNode }) {
       query,
       prefill,
       labelFilter,
+      attachmentOnly,
       toggleStar,
       markRead,
       markUnread,
