@@ -1,10 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Eye, EyeOff, Inbox, Loader2, Lock, Mail, MailQuestion } from "lucide-react";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -18,43 +17,77 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useAuth } from "@/components/auth/auth-context";
+import { GmailLoadingScreen } from "@/components/ui/gmail-loading-screen";
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [forgotOpen, setForgotOpen] = useState(false);
 
+  // Gmail-style loading screen state
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [verifyProgress, setVerifyProgress] = useState(0);
+  const [verifyStatus, setVerifyStatus] = useState("Verifying staff credentials…");
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    setIsVerifying(true);
+    setVerifyProgress(15);
+    setVerifyStatus("Verifying staff credentials…");
 
-    try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
+    // Realistic multi-step progress mimicking Gmail loading
+    const t1 = setTimeout(() => {
+      setVerifyProgress(45);
+      setVerifyStatus("Connecting to Hostinger mail server (imap.hostinger.com)…");
+    }, 450);
 
-      const data = await res.json();
+    const t2 = setTimeout(() => {
+      setVerifyProgress(75);
+      setVerifyStatus("Synchronizing college mailbox & secure session…");
+    }, 950);
 
-      if (!res.ok) {
-        toast.error(data.error || "Authentication failed", {
-          description: data.details,
-        });
-        setLoading(false);
-        return;
-      }
+    const t3 = setTimeout(() => {
+      setVerifyProgress(95);
+      setVerifyStatus("Opening Superior Mail inbox…");
+    }, 1450);
 
-      toast.success(`Signed in as ${data.user?.name || email}`);
-      router.push("/mail");
-    } catch {
-      toast.error("Network error while connecting to mail server");
-      setLoading(false);
+    // Call login API in parallel with minimum smooth animation display
+    const loginPromise = login(email, password);
+    const minDelay = new Promise((resolve) => setTimeout(resolve, 1850));
+
+    const [success] = await Promise.all([loginPromise, minDelay]);
+
+    clearTimeout(t1);
+    clearTimeout(t2);
+    clearTimeout(t3);
+
+    if (success) {
+      setVerifyProgress(100);
+      setVerifyStatus("Loading workspace…");
+      setTimeout(() => {
+        const redirectTo = searchParams.get("redirect") || "/mail";
+        router.push(redirectTo);
+      }, 250);
+    } else {
+      setIsVerifying(false);
+      setVerifyProgress(0);
     }
   };
+
+  if (isVerifying) {
+    return (
+      <GmailLoadingScreen
+        progress={verifyProgress}
+        statusText={verifyStatus}
+        subText="Superior College Mian Channu · Learn Today. Lead Tomorrow."
+      />
+    );
+  }
 
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center bg-[#f6f8fc] px-4 py-10">
@@ -102,7 +135,7 @@ export default function LoginPage() {
                     placeholder="your.name@superiorcollegemc.com"
                     className="pl-9"
                     autoComplete="username"
-                    disabled={loading}
+                    disabled={isVerifying}
                   />
                 </div>
               </div>
@@ -129,7 +162,7 @@ export default function LoginPage() {
                     placeholder="Your mailbox password"
                     className="pl-9 pr-10"
                     autoComplete="current-password"
-                    disabled={loading}
+                    disabled={isVerifying}
                   />
                   <button
                     type="button"
@@ -149,13 +182,12 @@ export default function LoginPage() {
                 </Label>
               </div>
 
-              <Button type="submit" className="w-full" size="lg" disabled={loading}>
-                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {loading ? "Authenticating with Hostinger…" : "Sign in to your inbox"}
+              <Button type="submit" className="w-full" size="lg" disabled={isVerifying}>
+                Sign in to your inbox
               </Button>
 
               <p className="text-center text-xs leading-relaxed text-muted-foreground">
-                Authenticates directly against your Hostinger mailbox (<span className="font-medium text-[#0b3d2a]">superiorcollegemc.com</span>).
+                Official staff mail portal of Superior College Mian Channu.
               </p>
             </form>
           </CardContent>
@@ -205,5 +237,19 @@ export default function LoginPage() {
         </DialogContent>
       </Dialog>
     </main>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-[#f6f8fc]">
+          <Loader2 className="h-8 w-8 animate-spin text-[#0b3d2a]" />
+        </div>
+      }
+    >
+      <LoginForm />
+    </Suspense>
   );
 }

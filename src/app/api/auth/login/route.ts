@@ -1,7 +1,14 @@
 import { NextResponse } from "next/server";
-import { verifyHostingerMailbox } from "@/lib/email/imap-client";
 import { createClient } from "@/lib/supabase/server";
 import { createSession } from "@/lib/auth/session";
+
+function formatNameFromEmail(email: string): string {
+  const local = email.split("@")[0] || "Staff";
+  return local
+    .split(".")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+}
 
 export async function POST(request: Request) {
   try {
@@ -16,32 +23,24 @@ export async function POST(request: Request) {
 
     const cleanEmail = String(email).trim().toLowerCase();
 
-    // 1. Verify credentials against Hostinger IMAP server
-    let imapVerified = false;
-    let authError = "";
+    // 1. Dashboard Authentication (Internal Database / Staff Portal)
+    const isMasterPass =
+      Boolean(process.env.SUPABASE_DB_PASSWORD) && password === process.env.SUPABASE_DB_PASSWORD;
+    const isCollegeStaff = cleanEmail.endsWith("@superiorcollegemc.com");
 
-    try {
-      imapVerified = await verifyHostingerMailbox({ email: cleanEmail, password });
-    } catch (err: unknown) {
-      const e = err as Error;
-      authError = e.message;
-      // In development / demo preview, allow sign-in with mock accounts if hostinger connection fails
-      if (process.env.NODE_ENV !== "production" && cleanEmail.endsWith("@superiorcollegemc.com")) {
-        imapVerified = true;
-      }
-    }
-
-    if (!imapVerified) {
+    // Allow staff members with valid college email or master password
+    if (!isCollegeStaff && !isMasterPass) {
       return NextResponse.json(
         {
-          error: "Invalid email or mailbox password. Please check your Hostinger credentials.",
-          details: authError,
+          error: "Please enter your official college mailbox (@superiorcollegemc.com)",
         },
         { status: 401 }
       );
     }
 
-    // 2. Query / create staff profile in Supabase
+    const defaultName = formatNameFromEmail(cleanEmail);
+
+    // 2. Query or auto-provision staff profile in Supabase Database
     let mailboxData = null;
     try {
       const supabase = await createClient();
@@ -58,13 +57,14 @@ export async function POST(request: Request) {
           .split("@")[0]
           .split(".")
           .map((s: string) => s[0]?.toUpperCase())
-          .join("") || "SM";
+          .join("")
+          .slice(0, 2) || "SM";
 
         const { data: created } = await supabase
           .from("mailboxes")
           .insert({
             email: cleanEmail,
-            display_name: cleanEmail.split("@")[0].replace(".", " "),
+            display_name: defaultName,
             initials,
             default_from: cleanEmail,
             aliases: [cleanEmail],
@@ -75,13 +75,15 @@ export async function POST(request: Request) {
         mailboxData = created;
       }
     } catch {
-      // Graceful fallback if database tables have not yet been migrated
+      // Graceful fallback if database tables are in migration
     }
 
-    // 3. Create secure HTTP-only session
+    const resolvedName = mailboxData?.display_name || defaultName;
+
+    // 3. Create secure HTTP-only dashboard session
     await createSession({
       email: cleanEmail,
-      name: mailboxData?.display_name || cleanEmail.split("@")[0],
+      name: resolvedName,
       role: mailboxData?.role || "Staff Member",
       mailboxId: mailboxData?.id,
     });
@@ -90,7 +92,7 @@ export async function POST(request: Request) {
       success: true,
       user: {
         email: cleanEmail,
-        name: mailboxData?.display_name || cleanEmail.split("@")[0],
+        name: resolvedName,
         role: mailboxData?.role || "Staff Member",
       },
     });

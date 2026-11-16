@@ -30,8 +30,8 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { currentUser } from "@/lib/mock-data";
 import { useMail } from "@/components/mail/mail-context";
+import { useAuth } from "@/components/auth/auth-context";
 
 const collegeApps = [
   { name: "College Website", url: "https://www.superiorcollegemc.com", icon: Globe },
@@ -42,6 +42,7 @@ const collegeApps = [
 export function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
   const router = useRouter();
   const { query, setQuery, setAttachmentOnly } = useMail();
+  const { user, logout } = useAuth();
   const [optionsOpen, setOptionsOpen] = useState(false);
   const [fromField, setFromField] = useState("");
   const [subjectField, setSubjectField] = useState("");
@@ -231,16 +232,16 @@ export function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
           <DropdownMenuTrigger className="ml-1 rounded-full">
             <Avatar className="h-9 w-9">
               <AvatarFallback className="bg-[#0b3d2a] text-sm font-medium text-white">
-                {currentUser.initials}
+                {user.initials}
               </AvatarFallback>
             </Avatar>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-72 rounded-2xl p-2">
             <div className="px-3 py-2">
-              <p className="text-sm font-medium">{currentUser.name}</p>
-              <p className="text-xs font-normal text-muted-foreground">{currentUser.role}</p>
+              <p className="text-sm font-medium">{user.name}</p>
+              <p className="text-xs font-normal text-muted-foreground">{user.role}</p>
               <p className="mt-0.5 truncate text-xs font-normal text-muted-foreground">
-                {currentUser.email}
+                {user.email}
               </p>
             </div>
             <DropdownMenuSeparator />
@@ -251,7 +252,7 @@ export function Topbar({ onMenuClick }: { onMenuClick?: () => void }) {
               <Settings className="mr-2 h-4 w-4" /> Mailbox settings
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => router.push("/login")}>
+            <DropdownMenuItem onClick={logout}>
               <LogOut className="mr-2 h-4 w-4" /> Sign out
             </DropdownMenuItem>
           </DropdownMenuContent>

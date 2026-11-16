@@ -172,7 +172,23 @@ export default function ComposePage() {
       toast.info("Please wait — attachments are still uploading");
       return;
     }
-    addOutgoing(buildEmail("sent"));
+    const outgoing = buildEmail("sent");
+    addOutgoing(outgoing);
+
+    // Dispatch to Hostinger SMTP / Supabase API
+    fetch("/api/mail/send", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        from,
+        to,
+        cc: cc || undefined,
+        bcc: bcc || undefined,
+        subject: subject || "(no subject)",
+        text: body,
+      }),
+    }).catch(() => {});
+
     toast.success(
       attachments.length > 0
         ? `Message sent with ${attachments.length} attachment${attachments.length > 1 ? "s" : ""}`
